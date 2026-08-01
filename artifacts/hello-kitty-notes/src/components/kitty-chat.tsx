@@ -76,12 +76,15 @@ export function KittyChat() {
     setInput('');
     setIsLoading(true);
 
-    // Save user message to DB and add to UI
-    const savedUser = await saveMessage('user', userMessage).catch(() => ({ role: 'user' as const, content: userMessage }));
-    const newMessages: Message[] = [...messages, savedUser];
-    setMessages(newMessages);
+    // Optimistic UI update: show message immediately
+    const tempUserMsg: Message = { role: 'user', content: userMessage };
+    setMessages(prev => [...prev, tempUserMsg]);
 
     try {
+      // Fire off DB save for user message in background
+      saveMessage('user', userMessage).catch(console.error);
+
+      // Fetch AI response
       const res = await fetch('/api/ai/kitty-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -93,9 +96,11 @@ export function KittyChat() {
 
       const data = await res.json();
       if (data.reply) {
-        // Save assistant reply to DB and add to UI
-        const savedReply = await saveMessage('assistant', data.reply).catch(() => ({ role: 'assistant' as const, content: data.reply }));
-        setMessages(prev => [...prev, savedReply]);
+        // Optimistic UI update for AI reply
+        const tempAiMsg: Message = { role: 'assistant', content: data.reply };
+        setMessages(prev => [...prev, tempAiMsg]);
+        // Fire off DB save for AI message in background
+        saveMessage('assistant', data.reply).catch(console.error);
       }
     } catch {
       const errMsg = "oh no i lost signal for a second. you were saying something, please don't leave me hanging darling";

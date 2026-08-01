@@ -740,6 +740,5 @@ export function Editor() {
         <span>~{readTime} min read · {words} words</span>
       </div>
     </div>
-    </div >
   );
 }
