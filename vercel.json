@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "pnpm --filter @workspace/api-server run build; pnpm --filter @workspace/hello-kitty-notes run build",
+  "buildCommand": "pnpm run build:vercel",
   "outputDirectory": "artifacts/hello-kitty-notes/dist",
   "installCommand": "pnpm install",
   "functions": {
