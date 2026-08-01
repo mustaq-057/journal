@@ -12,5 +12,5 @@ export const chatMessagesTable = pgTable("kitty_chat_messages", {
 export const insertChatMessageSchema = createInsertSchema(chatMessagesTable);
 export const selectChatMessageSchema = createSelectSchema(chatMessagesTable);
 
-export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
+export type InsertChatMessage = typeof chatMessagesTable.$inferInsert;
 export type ChatMessage = typeof chatMessagesTable.$inferSelect;

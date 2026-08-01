@@ -37,7 +37,7 @@ router.get("/entries/:id", async (req, res) => {
     const rows = await db
       .select()
       .from(entriesTable)
-      .where(eq(entriesTable.id, req.params.id));
+      .where(eq(entriesTable.id, req.params.id as string));
 
     if (rows.length === 0) {
       res.status(404).json({ error: "Entry not found" });
@@ -80,7 +80,7 @@ router.post("/entries", async (req, res) => {
 // PATCH /api/entries/:id
 router.patch("/entries/:id", async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const updates = req.body as Record<string, unknown>;
 
     const rows = await db
@@ -108,7 +108,7 @@ router.patch("/entries/:id", async (req, res) => {
 // DELETE /api/entries/:id
 router.delete("/entries/:id", async (req, res) => {
   try {
-    await db.delete(entriesTable).where(eq(entriesTable.id, req.params.id));
+    await db.delete(entriesTable).where(eq(entriesTable.id, req.params.id as string));
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: "Failed to delete entry" });
@@ -129,7 +129,7 @@ router.post(
       const rows = await db
         .select()
         .from(entriesTable)
-        .where(eq(entriesTable.id, req.params.id));
+        .where(eq(entriesTable.id, req.params.id as string));
 
       if (rows.length === 0) {
         res.status(404).json({ error: "Entry not found" });
@@ -155,7 +155,7 @@ router.post(
       const updated = await db
         .update(entriesTable)
         .set({ imageUrl: result.secure_url, updatedAt: Date.now() })
-        .where(eq(entriesTable.id, req.params.id))
+        .where(eq(entriesTable.id, req.params.id as string))
         .returning();
 
       res.json(updated[0]);
@@ -180,7 +180,7 @@ router.post(
       const rows = await db
         .select()
         .from(entriesTable)
-        .where(eq(entriesTable.id, req.params.id));
+        .where(eq(entriesTable.id, req.params.id as string));
 
       if (rows.length === 0) {
         res.status(404).json({ error: "Entry not found" });
@@ -205,7 +205,7 @@ router.post(
       const updated = await db
         .update(entriesTable)
         .set({ audioUrl: result.secure_url, updatedAt: Date.now() })
-        .where(eq(entriesTable.id, req.params.id))
+        .where(eq(entriesTable.id, req.params.id as string))
         .returning();
 
       res.json(updated[0]);

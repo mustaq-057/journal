@@ -18,5 +18,5 @@ export const entriesTable = pgTable("journal_entries", {
 export const insertEntrySchema = createInsertSchema(entriesTable);
 export const selectEntrySchema = createSelectSchema(entriesTable);
 
-export type InsertEntry = z.infer<typeof insertEntrySchema>;
+export type InsertEntry = typeof entriesTable.$inferInsert;
 export type Entry = typeof entriesTable.$inferSelect;
