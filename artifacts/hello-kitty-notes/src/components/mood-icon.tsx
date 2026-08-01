@@ -69,5 +69,12 @@ export function MoodIcon({ mood, className }: { mood: Mood; className?: string }
           <path d="M16 25 Q20 28 24 25" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
         </svg>
       );
+    default:
+      return (
+        <span className={cn("text-xl leading-none flex items-center justify-center", className)}>
+          {mood}
+        </span>
+      );
   }
 }
+

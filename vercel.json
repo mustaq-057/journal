@@ -1,0 +1,25 @@
+{
+  "version": 2,
+  "buildCommand": "pnpm --filter @workspace/db run build && pnpm --filter @workspace/api-server run build && pnpm --filter @workspace/hello-kitty-notes run build",
+  "outputDirectory": "artifacts/hello-kitty-notes/dist/public",
+  "installCommand": "pnpm install",
+  "functions": {
+    "api/index.mjs": {
+      "memory": 1024,
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api"
+    },
+    {
+      "source": "/((?!api).*)",
+      "destination": "/index.html"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
+}
