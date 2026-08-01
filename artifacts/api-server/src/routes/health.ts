@@ -1,4 +1,4 @@
-import { Router, type Request, type Response } from "express";
+import { Router } from "express";
 import { z } from "zod";
 
 const HealthCheckResponse = z.object({
@@ -7,7 +7,7 @@ const HealthCheckResponse = z.object({
 
 const router = Router();
 
-router.get("/healthz", (_req: Request, res: Response) => {
+router.get("/healthz", (_req: any, res: any) => {
   const data = HealthCheckResponse.parse({ status: "ok" });
   res.json(data);
 });
