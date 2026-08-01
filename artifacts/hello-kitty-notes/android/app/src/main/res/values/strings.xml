@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Secret Diary</string>
-    <string name="title_activity_main">Secret Diary</string>
+    <string name="app_name">journa</string>
+    <string name="title_activity_main">journa</string>
     <string name="package_name">com.hellokitty.journal</string>
     <string name="custom_url_scheme">com.hellokitty.journal</string>
 </resources>

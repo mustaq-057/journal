@@ -2,9 +2,8 @@ import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.hellokitty.journal',
-  appName: 'Secret Diary',
+  appName: 'journa',
   webDir: 'dist',
-  bundledWebRuntime: false,
 };
 
 export default config;
