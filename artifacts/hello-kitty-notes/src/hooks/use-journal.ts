@@ -25,8 +25,10 @@ export function getReadingTime(words: number) {
   return Math.max(1, Math.ceil(words / 200));
 }
 
+const baseUrl = import.meta.env.VITE_API_URL || '';
+
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`/api${path}`, {
+  const res = await fetch(`${baseUrl}/api${path}`, {
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     ...options,
   });
@@ -101,7 +103,7 @@ export function useJournal() {
   const uploadImage = useCallback(async (id: string, file: File) => {
     const formData = new FormData();
     formData.append('image', file);
-    const res = await fetch(`/api/entries/${id}/image`, {
+    const res = await fetch(`${baseUrl}/api/entries/${id}/image`, {
       method: 'POST',
       body: formData,
     });
@@ -114,7 +116,7 @@ export function useJournal() {
   const uploadAudio = useCallback(async (id: string, file: Blob) => {
     const formData = new FormData();
     formData.append('audio', file, 'voice-memo.webm');
-    const res = await fetch(`/api/entries/${id}/audio`, {
+    const res = await fetch(`${baseUrl}/api/entries/${id}/audio`, {
       method: 'POST',
       body: formData,
     });
