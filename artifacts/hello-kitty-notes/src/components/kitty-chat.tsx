@@ -30,6 +30,8 @@ export function KittyChat() {
   const [showStarters, setShowStarters] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  
+  const baseUrl = import.meta.env.VITE_API_URL || '';
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -39,7 +41,7 @@ export function KittyChat() {
   useEffect(() => {
     const loadHistory = async () => {
       try {
-        const res = await fetch('/api/chat');
+        const res = await fetch(`${baseUrl}/api/chat`);
         if (res.ok) {
           const data: Message[] = await res.json();
           if (data.length > 0) {
@@ -61,7 +63,7 @@ export function KittyChat() {
   }, [messages, isLoading]);
 
   const saveMessage = async (role: string, content: string): Promise<Message> => {
-    const res = await fetch('/api/chat', {
+    const res = await fetch(`${baseUrl}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ role, content }),
@@ -85,7 +87,7 @@ export function KittyChat() {
       saveMessage('user', userMessage).catch(console.error);
 
       // Fetch AI response
-      const res = await fetch('/api/ai/kitty-chat', {
+      const res = await fetch(`${baseUrl}/api/ai/kitty-chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -114,7 +116,7 @@ export function KittyChat() {
 
   const clearHistory = async () => {
     try {
-      await fetch('/api/chat', { method: 'DELETE' });
+      await fetch(`${baseUrl}/api/chat`, { method: 'DELETE' });
       setMessages([DEFAULT_MSG]);
       setShowStarters(true);
     } catch (err) {

@@ -332,7 +332,8 @@ export function Editor() {
                   btn.disabled = true;
 
                   try {
-                    const res = await fetch('/api/ai/suggest-mood', {
+                    const apiBase = import.meta.env.VITE_API_URL || '';
+                    const res = await fetch(`${apiBase}/api/ai/suggest-mood`, {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ text: fullText }),
