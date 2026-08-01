@@ -457,6 +457,20 @@ export function Editor() {
               </button>
             </div>
             <div className="flex gap-2 flex-wrap items-center">
+              {MOODS.map(m => (
+                <button
+                  key={m}
+                  onClick={() => setMood(m)}
+                  className={cn(
+                    "p-3 rounded-2xl transition-all duration-300 cursor-pointer",
+                    mood === m
+                      ? "bg-primary text-white shadow-[0_4px_12px_rgba(255,79,139,0.4)] scale-110"
+                      : "bg-white text-muted-foreground hover:bg-secondary/50 hover:text-foreground hover:scale-105 border border-border/50"
+                  )}
+                  title={m}
+                >
+                  <MoodIcon mood={m} className="w-7 h-7" />
+                </button>
               ))}
             </div>
           </div>
@@ -466,6 +480,17 @@ export function Editor() {
           <div>
             <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">Theme Color</label>
             <div className="flex gap-3 items-center flex-wrap">
+              {COLORS.map(c => (
+                <button
+                  key={c.id}
+                  onClick={() => setColor(c.id)}
+                  className={cn(
+                    "w-12 h-12 rounded-full transition-all duration-300 border-4 cursor-pointer",
+                    color === c.id ? "border-primary scale-110 shadow-md" : "border-white hover:scale-105 shadow-sm"
+                  )}
+                  style={{ backgroundColor: c.value }}
+                  title={c.label}
+                />
               ))}
             </div>
           </div>
