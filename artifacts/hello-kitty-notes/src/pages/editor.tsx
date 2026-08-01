@@ -730,13 +730,23 @@ export function Editor() {
         </div>
 
         {/* Main Textarea */}
-        <div className="relative z-10 flex-1 min-h-[400px]">
+        <div
+          className="relative z-10 flex-1 min-h-[400px] cursor-text"
+          onClick={() => textareaRef.current?.focus()}
+          onTouchStart={() => textareaRef.current?.focus()}
+        >
           <textarea
             ref={textareaRef}
             placeholder="What happened today? Write your heart out..."
             value={body}
             onChange={(e) => setBody(e.target.value)}
-            className="w-full min-h-[400px] text-xl font-secondary leading-[1.8] text-foreground bg-transparent border-none outline-none resize-none focus:ring-0 p-4"
+            onTouchStart={(e) => e.currentTarget.focus()}
+            onClick={(e) => e.currentTarget.focus()}
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck={false}
+            tabIndex={0}
+            className="w-full min-h-[400px] text-xl font-secondary leading-[1.8] text-foreground bg-transparent border-none outline-none resize-none focus:ring-0 p-4 cursor-text"
           />
         </div>
       </div>
