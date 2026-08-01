@@ -50,7 +50,57 @@ export function Home() {
   const { entries, isLoaded } = useJournal();
   const [search, setSearch] = useState('');
 
-  if (!isLoaded) return null;
+  if (!isLoaded) return (
+    <div className="space-y-12 pb-20">
+      {/* Search skeleton */}
+      <div className="flex flex-col gap-8">
+        <div className="w-full max-w-md mx-auto h-14 bg-white rounded-full border-2 border-primary/10 animate-pulse" />
+
+        {/* Hero skeleton */}
+        <div className="relative bg-gradient-to-r from-primary/10 to-secondary/20 rounded-[3rem] p-8 overflow-hidden border border-white shadow-sm flex items-center justify-between gap-8">
+          <div className="flex-1 space-y-4">
+            <div className="h-10 bg-primary/20 rounded-full w-3/4 animate-pulse" />
+            <div className="h-5 bg-primary/10 rounded-full w-1/2 animate-pulse" />
+          </div>
+          <div className="w-[200px] h-[140px] bg-primary/10 rounded-3xl animate-pulse shrink-0" />
+        </div>
+
+        {/* Stats skeleton */}
+        <div className="grid grid-cols-3 gap-4">
+          {[0,1,2].map(i => (
+            <div key={i} className="bg-white rounded-3xl p-4 text-center border-2 border-border shadow-sm flex flex-col items-center gap-2">
+              <div className="w-10 h-10 rounded-full bg-pink-100 animate-pulse" />
+              <div className="h-6 w-16 bg-gray-100 rounded-full animate-pulse" />
+              <div className="h-3 w-12 bg-gray-100 rounded-full animate-pulse" />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Entry card skeletons */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {[0,1,2,3].map(i => (
+          <div key={i} className="bg-white p-6 rounded-[2.5rem] border border-border shadow-sm overflow-hidden">
+            <div className="absolute top-0 left-0 bottom-0 w-3 bg-pink-200 animate-pulse" />
+            <div className="flex items-center gap-3 mb-4 pl-2">
+              <div className="w-10 h-10 rounded-2xl bg-pink-100 animate-pulse" />
+              <div className="space-y-1">
+                <div className="h-4 w-16 bg-gray-100 rounded-full animate-pulse" />
+                <div className="h-3 w-10 bg-gray-100 rounded-full animate-pulse" />
+              </div>
+            </div>
+            <div className="pl-2 space-y-3">
+              <div className="h-7 bg-gray-100 rounded-full w-3/4 animate-pulse" />
+              <div className="h-4 bg-gray-100 rounded-full w-full animate-pulse" />
+              <div className="h-4 bg-gray-100 rounded-full w-5/6 animate-pulse" />
+              <div className="h-4 bg-gray-100 rounded-full w-4/6 animate-pulse" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
 
   const filtered = entries.filter(e => 
     e.title.toLowerCase().includes(search.toLowerCase()) || 
