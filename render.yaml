@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: hello-kitty-api
+    env: node
+    buildCommand: pnpm install && pnpm --filter @workspace/api-server run build
+    startCommand: pnpm --filter @workspace/api-server run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: DATABASE_URL
+        sync: false
+      - key: CLOUDINARY_URL
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+    autoDeploy: true
+
+  - type: web
+    name: hello-kitty-frontend
+    env: static
+    buildCommand: pnpm install && pnpm --filter @workspace/hello-kitty-notes run build
+    staticPublishPath: ./artifacts/hello-kitty-notes/dist
+    envVars:
+      - key: NODE_ENV
+        value: production
+    routes:
+      - type: rewrite
+        source: /api/*
+        destination: https://hello-kitty-api.onrender.com/api/*
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    autoDeploy: true
