@@ -165,10 +165,8 @@ export function Editor() {
         if (e.data.size > 0) audioChunksRef.current.push(e.data);
       };
 
-      mediaRecorder.onstop = async () => {
-        stream.getTracks().forEach(track => track.stop());
-        streamRef.current = null;
-        // If cancelled, discard audio and do nothing
+      mediaRecorder.onstop = () => {
+        // Stream already stopped in stopRecording(). Just build the blob.
         if (isCancelledRef.current) {
           isCancelledRef.current = false;
           return;
@@ -176,31 +174,32 @@ export function Editor() {
         const finalMime = mimeType || 'audio/webm';
         const audioBlob = new Blob(audioChunksRef.current, { type: finalMime });
         const localUrl = URL.createObjectURL(audioBlob);
+
+        // Single state update — show the audio player immediately
         setLocalAudio(localUrl);
 
-        // Always upload – if entry is new, save it first
-        setUploadingAudio(true);
-        try {
-          let entryId = params.id;
-          if (isNew || !entryId || entryId === 'new') {
-            // Create the entry first so we have an ID
-            const saved = await addEntry({ title, body, mood, color, tags });
-            entryId = saved.id;
-            // Navigate to the real URL without triggering save animation
-            window.history.replaceState(null, '', `/entry/${entryId}`);
+        // Fire upload silently in background — NO setState that could cause re-renders
+        const currentEntryId = params.id;
+        const isCurrentNew = !currentEntryId || currentEntryId === 'new';
+
+        const doUpload = async () => {
+          try {
+            let entryId = currentEntryId;
+            if (isCurrentNew) {
+              const saved = await addEntry({ title, body, mood, color, tags });
+              entryId = saved.id;
+              window.history.replaceState(null, '', `/entry/${entryId}`);
+            }
+            const updated = await uploadAudio(entryId as string, audioBlob);
+            // Silently swap blob URL for cloud URL without causing a visible re-render flash
+            setLocalAudio(prev => (prev === localUrl ? (updated.audioUrl || localUrl) : prev));
+          } catch (err) {
+            console.error('Audio upload failed', err);
           }
-          const updated = await uploadAudio(entryId as string, audioBlob);
-          setLocalAudio(prev => {
-            // Only update if the user hasn't deleted it (by clicking X) during the upload
-            if (prev === localUrl) return updated.audioUrl || localUrl;
-            return prev;
-          });
-        } catch (err) {
-          console.error("Audio upload failed", err);
-          setKittyModal({ open: true, message: "Voice memo saved locally but couldn't upload. Try saving the entry again." });
-        } finally {
-          setUploadingAudio(false);
-        }
+        };
+
+        // Small delay so the UI settles first before upload begins
+        setTimeout(doUpload, 300);
       };
 
       mediaRecorder.start(250);
@@ -223,6 +222,9 @@ export function Editor() {
 
   const stopRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
+      // Stop mic stream IMMEDIATELY — releases browser mic indicator right away
+      streamRef.current?.getTracks().forEach(t => t.stop());
+      streamRef.current = null;
       mediaRecorderRef.current.stop();
       setIsRecording(false);
       if (timerRef.current) clearInterval(timerRef.current);
