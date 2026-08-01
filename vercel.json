@@ -4,7 +4,7 @@
   "outputDirectory": "artifacts/hello-kitty-notes/dist/public",
   "installCommand": "pnpm install",
   "functions": {
-    "api/index.mjs": {
+    "api/index.ts": {
       "memory": 1024,
       "maxDuration": 30
     }
