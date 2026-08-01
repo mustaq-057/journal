@@ -210,8 +210,6 @@ export function Home() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8">
           <AnimatePresence>
             {filtered.map((entry, i) => {
-              const words = getWordCount(entry.body);
-              const readTime = getReadingTime(words);
               return (
                 <motion.div
                   key={entry.id}
@@ -265,10 +263,10 @@ export function Home() {
                             </div>
                           )}
                           
-                          {/* Reading stats */}
+                          {/* Character count */}
                           <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase tracking-wider opacity-60">
                             <StickerIcon name="star" className="w-3 h-3" />
-                            <span>~{readTime} min read · {words} words</span>
+                            <span>{entry.body.length} characters</span>
                           </div>
                         </div>
                       </div>
