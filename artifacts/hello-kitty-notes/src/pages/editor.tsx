@@ -40,13 +40,14 @@ export function Editor() {
   const [localAudio, setLocalAudio] = useState<string | null>(null);
   const [uploadingAudio, setUploadingAudio] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const [recordingTime, setRecordingTime] = useState(0);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<number | null>(null);
+  const timerSecondsRef = useRef(0);
+  const timerDisplayRef = useRef<HTMLSpanElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const isCancelledRef = useRef(false);
@@ -202,11 +203,17 @@ export function Editor() {
         }
       };
 
-      mediaRecorder.start(250); // timeslice: collect every 250ms
+      mediaRecorder.start(250);
       setIsRecording(true);
-      setRecordingTime(0);
+      timerSecondsRef.current = 0;
+      if (timerDisplayRef.current) timerDisplayRef.current.textContent = '0:00';
       timerRef.current = window.setInterval(() => {
-        setRecordingTime(prev => prev + 1);
+        timerSecondsRef.current += 1;
+        const m = Math.floor(timerSecondsRef.current / 60);
+        const s = timerSecondsRef.current % 60;
+        if (timerDisplayRef.current) {
+          timerDisplayRef.current.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+        }
       }, 1000);
     } catch (err) {
       console.error('Microphone access error:', err);
@@ -233,12 +240,6 @@ export function Editor() {
     }
   };
 
-
-  const formatTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m}:${s.toString().padStart(2, '0')}`;
-  };
 
   const toggleTag = (t: string) => {
     if (tags.includes(t)) {
@@ -692,11 +693,11 @@ export function Editor() {
               </button>
             </div>
           ) : isRecording ? (
-            <div className="w-full flex items-center justify-between gap-4 p-4 rounded-[2rem] border-2 border-primary bg-primary/5 shadow-[0_4px_15px_rgba(255,79,139,0.15)] animate-pulse">
+            <div className="w-full flex items-center justify-between gap-4 p-4 rounded-[2rem] border-2 border-primary bg-primary/5 shadow-[0_4px_15px_rgba(255,79,139,0.15)]">
               <div className="flex items-center gap-3">
-                <div className="w-3 h-3 rounded-full bg-red-500 animate-bounce" />
+                <div className="w-3 h-3 rounded-full bg-red-500" />
                 <span className="font-heading text-primary text-xl tracking-wider">Recording...</span>
-                <span className="font-secondary font-bold text-muted-foreground bg-white px-2 py-1 rounded-md border border-border">{formatTime(recordingTime)}</span>
+                <span ref={timerDisplayRef} className="font-secondary font-bold text-muted-foreground bg-white px-2 py-1 rounded-md border border-border">0:00</span>
               </div>
               <div className="flex items-center gap-2">
                 <button
