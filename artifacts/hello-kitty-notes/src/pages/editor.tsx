@@ -49,6 +49,7 @@ export function Editor() {
   const timerRef = useRef<number | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const isCancelledRef = useRef(false);
   const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
@@ -144,6 +145,7 @@ export function Editor() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
+      isCancelledRef.current = false;
 
       // Pick the best supported mime type
       const mimeType = [
@@ -164,6 +166,12 @@ export function Editor() {
 
       mediaRecorder.onstop = async () => {
         stream.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+        // If cancelled, discard audio and do nothing
+        if (isCancelledRef.current) {
+          isCancelledRef.current = false;
+          return;
+        }
         const finalMime = mimeType || 'audio/webm';
         const audioBlob = new Blob(audioChunksRef.current, { type: finalMime });
         const localUrl = URL.createObjectURL(audioBlob);
@@ -216,7 +224,7 @@ export function Editor() {
 
   const cancelRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.onstop = null; // Prevent upload handler from firing
+      isCancelledRef.current = true; // Signal onstop to discard audio
       mediaRecorderRef.current.stop();
       streamRef.current?.getTracks().forEach(t => t.stop());
       streamRef.current = null;
@@ -721,26 +729,14 @@ export function Editor() {
           )}
         </div>
 
-        {/* Main Textarea with Live Sticker Preview */}
+        {/* Main Textarea */}
         <div className="relative z-10 flex-1 min-h-[400px]">
-          {/* Overlay renders sticker icons - pointer-events none so clicks pass through to textarea */}
-          <div
-            aria-hidden
-            className="absolute top-0 left-0 w-full h-full p-4 text-xl font-secondary leading-[1.8] text-foreground pointer-events-none whitespace-pre-wrap break-words overflow-hidden"
-          >
-            {body
-              ? <RichText content={body} />
-              : <span className="text-muted-foreground/40">What happened today? Write your heart out...</span>
-            }
-          </div>
-          {/* Textarea sits on top - transparent text so overlay shows through */}
           <textarea
             ref={textareaRef}
-            placeholder=""
+            placeholder="What happened today? Write your heart out..."
             value={body}
             onChange={(e) => setBody(e.target.value)}
-            className="relative w-full h-full min-h-[400px] text-xl font-secondary leading-[1.8] bg-transparent border-none outline-none resize-none focus:ring-0 p-4 text-transparent caret-foreground selection:bg-primary/20 z-10"
-            style={{ caretColor: 'var(--foreground)' }}
+            className="w-full min-h-[400px] text-xl font-secondary leading-[1.8] text-foreground bg-transparent border-none outline-none resize-none focus:ring-0 p-4"
           />
         </div>
       </div>
