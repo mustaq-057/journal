@@ -177,7 +177,11 @@ export function Editor() {
             window.history.replaceState(null, '', `/entry/${entryId}`);
           }
           const updated = await uploadAudio(entryId as string, audioBlob);
-          setLocalAudio(updated.audioUrl || localUrl);
+          setLocalAudio(prev => {
+            // Only update if the user hasn't deleted it (by clicking X) during the upload
+            if (prev === localUrl) return updated.audioUrl || localUrl;
+            return prev;
+          });
         } catch (err) {
           console.error("Audio upload failed", err);
           setKittyModal({ open: true, message: "Voice memo saved locally but couldn't upload. Try saving the entry again." });
@@ -201,6 +205,16 @@ export function Editor() {
   const stopRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      if (timerRef.current) clearInterval(timerRef.current);
+    }
+  };
+
+  const cancelRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.onstop = null; // Prevent upload
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current.stream.getTracks().forEach(t => t.stop());
       setIsRecording(false);
       if (timerRef.current) clearInterval(timerRef.current);
     }
@@ -368,7 +382,7 @@ export function Editor() {
         </div>
       </header>
 
-      <div className="bg-white rounded-[3rem] shadow-sm border border-border p-6 md:p-12 overflow-hidden relative">
+      <div className="bg-white rounded-[3rem] shadow-sm border border-border p-6 md:p-12 overflow-hidden relative flex flex-col min-h-[600px]">
 
         {/* Soft color wash background based on theme */}
         <div
@@ -438,40 +452,7 @@ export function Editor() {
               </button>
             </div>
             <div className="flex gap-2 flex-wrap items-center">
-              {MOODS.map(m => (
-                <button
-                  key={m}
-                  onClick={() => setMood(m)}
-                  className={cn(
-                    "p-3 rounded-2xl transition-all duration-300 cursor-pointer",
-                    mood === m
-                      ? "bg-primary text-white shadow-[0_4px_12px_rgba(255,79,139,0.4)] scale-110"
-                      : "bg-white text-muted-foreground hover:bg-secondary/50 hover:text-foreground hover:scale-105 border border-border/50"
-                  )}
-                  title={m}
-                >
-                  <MoodIcon mood={m} className="w-7 h-7" />
-                </button>
               ))}
-
-              {/* Custom Emoji Mood Button (+) */}
-              <label
-                className="w-13 h-13 rounded-2xl border-2 border-dashed border-primary/40 bg-secondary/20 flex items-center justify-center cursor-pointer hover:scale-105 transition-all text-primary font-bold text-xl relative"
-                title="Add Custom Emoji Mood"
-              >
-                +
-                <input
-                  type="text"
-                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full text-center"
-                  onChange={(e) => {
-                    const val = e.target.value.trim();
-                    if (val) {
-                      setMood(val);
-                      e.target.value = '';
-                    }
-                  }}
-                />
-              </label>
             </div>
           </div>
 
@@ -480,31 +461,7 @@ export function Editor() {
           <div>
             <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">Theme Color</label>
             <div className="flex gap-3 items-center flex-wrap">
-              {COLORS.map(c => (
-                <button
-                  key={c.id}
-                  onClick={() => setColor(c.id)}
-                  className={cn(
-                    "w-12 h-12 rounded-full transition-all duration-300 border-4 cursor-pointer",
-                    color === c.id ? "border-primary scale-110 shadow-md" : "border-white hover:scale-105 shadow-sm"
-                  )}
-                  style={{ backgroundColor: c.value }}
-                  title={c.label}
-                />
               ))}
-
-              {/* Custom Theme Color Picker + Button */}
-              <label
-                className="w-12 h-12 rounded-full border-4 border-dashed border-primary/40 bg-secondary/20 flex items-center justify-center cursor-pointer hover:scale-105 transition-all text-primary font-bold text-xl relative"
-                title="Add Custom Theme Color"
-              >
-                +
-                <input
-                  type="color"
-                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                  onChange={(e) => setColor(e.target.value)}
-                />
-              </label>
             </div>
           </div>
         </div>
@@ -690,13 +647,24 @@ export function Editor() {
                 <span className="font-heading text-primary text-xl tracking-wider">Recording...</span>
                 <span className="font-secondary font-bold text-muted-foreground bg-white px-2 py-1 rounded-md border border-border">{formatTime(recordingTime)}</span>
               </div>
-              <button
-                type="button"
-                onClick={stopRecording}
-                className="w-12 h-12 flex items-center justify-center rounded-full bg-red-500 text-white hover:scale-105 active:scale-95 transition-all shadow-md"
-              >
-                <Square className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={cancelRecording}
+                  className="w-12 h-12 flex items-center justify-center rounded-full bg-secondary/20 text-red-400 hover:bg-red-50 hover:scale-105 active:scale-95 transition-all shadow-sm"
+                  title="Cancel Recording"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={stopRecording}
+                  className="w-12 h-12 flex items-center justify-center rounded-full bg-red-500 text-white hover:scale-105 active:scale-95 transition-all shadow-md"
+                  title="Stop & Save"
+                >
+                  <Square className="w-5 h-5" />
+                </button>
+              </div>
             </div>
           ) : (
             <button
@@ -711,27 +679,29 @@ export function Editor() {
         </div>
 
         {/* Main Textarea with Live Sticker Preview */}
-        <div className="relative z-10 group">
+        <div 
+          className="relative z-10 group flex-1 cursor-text min-h-[400px]"
+          onClick={() => textareaRef.current?.focus()}
+        >
           {/* Hidden textarea for input */}
           <textarea
             ref={textareaRef}
             placeholder="What happened today? Write your heart out..."
             value={body}
             onChange={(e) => setBody(e.target.value)}
-            className="w-full min-h-[400px] text-xl font-secondary leading-[1.8] bg-transparent border-none outline-none resize-none focus:ring-0 p-4 text-transparent caret-foreground selection:bg-primary/20"
+            className="w-full h-full min-h-[400px] text-xl font-secondary leading-[1.8] bg-transparent border-none outline-none resize-none focus:ring-0 p-4 text-transparent caret-foreground selection:bg-primary/20"
             style={{ caretColor: 'var(--foreground)' }}
           />
           {/* Live render overlay — shows icons instead of [name] tokens */}
           <div
             aria-hidden
-            className="absolute inset-0 p-4 text-xl font-secondary leading-[1.8] text-foreground pointer-events-none whitespace-pre-wrap break-words overflow-hidden"
+            className="absolute top-0 left-0 w-full h-full p-4 text-xl font-secondary leading-[1.8] text-foreground pointer-events-none whitespace-pre-wrap break-words overflow-hidden"
           >
             {body
               ? <RichText content={body} />
               : <span className="text-muted-foreground/40">What happened today? Write your heart out...</span>
             }
           </div>
-
         </div>
       </div>
 
