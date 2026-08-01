@@ -37,21 +37,8 @@ export function Editor() {
   const [kittyModal, setKittyModal] = useState<{ open: boolean; message: string; onConfirm?: () => void }>({ open: false, message: '' });
   const [localImage, setLocalImage] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
-  const [localAudio, setLocalAudio] = useState<string | null>(null);
-  const [uploadingAudio, setUploadingAudio] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
-
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
-  const timerRef = useRef<number | null>(null);
-  const timerSecondsRef = useRef(0);
-  const timerDisplayRef = useRef<HTMLSpanElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const isCancelledRef = useRef(false);
-  const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
     if (isLoaded && !isNew) {
@@ -63,7 +50,6 @@ export function Editor() {
         setColor(entry.color);
         setTags(entry.tags || []);
         if (entry.imageUrl) setLocalImage(entry.imageUrl);
-        if (entry.audioUrl) setLocalAudio(entry.audioUrl);
       } else {
         setLocation('/');
       }
@@ -142,105 +128,6 @@ export function Editor() {
     }
   };
 
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = stream;
-      isCancelledRef.current = false;
-
-      // Pick the best supported mime type
-      const mimeType = [
-        'audio/webm;codecs=opus',
-        'audio/webm',
-        'audio/ogg;codecs=opus',
-        'audio/mp4',
-      ].find(t => MediaRecorder.isTypeSupported(t)) || '';
-
-      const mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
-
-      // Collect data every 250ms so we don't lose chunks
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) audioChunksRef.current.push(e.data);
-      };
-
-      mediaRecorder.onstop = () => {
-        // Stream already stopped in stopRecording(). Just build the blob.
-        if (isCancelledRef.current) {
-          isCancelledRef.current = false;
-          return;
-        }
-        const finalMime = mimeType || 'audio/webm';
-        const audioBlob = new Blob(audioChunksRef.current, { type: finalMime });
-        const localUrl = URL.createObjectURL(audioBlob);
-
-        // Single state update — show the audio player immediately
-        setLocalAudio(localUrl);
-
-        // Fire upload silently in background — NO setState that could cause re-renders
-        const currentEntryId = params.id;
-        const isCurrentNew = !currentEntryId || currentEntryId === 'new';
-
-        const doUpload = async () => {
-          try {
-            let entryId = currentEntryId;
-            if (isCurrentNew) {
-              const saved = await addEntry({ title, body, mood, color, tags });
-              entryId = saved.id;
-              window.history.replaceState(null, '', `/entry/${entryId}`);
-            }
-            const updated = await uploadAudio(entryId as string, audioBlob);
-            // Silently swap blob URL for cloud URL without causing a visible re-render flash
-            setLocalAudio(prev => (prev === localUrl ? (updated.audioUrl || localUrl) : prev));
-          } catch (err) {
-            console.error('Audio upload failed', err);
-          }
-        };
-
-        // Small delay so the UI settles first before upload begins
-        setTimeout(doUpload, 300);
-      };
-
-      mediaRecorder.start(250);
-      setIsRecording(true);
-      timerSecondsRef.current = 0;
-      if (timerDisplayRef.current) timerDisplayRef.current.textContent = '0:00';
-      timerRef.current = window.setInterval(() => {
-        timerSecondsRef.current += 1;
-        const m = Math.floor(timerSecondsRef.current / 60);
-        const s = timerSecondsRef.current % 60;
-        if (timerDisplayRef.current) {
-          timerDisplayRef.current.textContent = `${m}:${s.toString().padStart(2, '0')}`;
-        }
-      }, 1000);
-    } catch (err) {
-      console.error('Microphone access error:', err);
-      setKittyModal({ open: true, message: "Couldn't access your microphone. Make sure the browser has permission!" });
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      // Stop mic stream IMMEDIATELY — releases browser mic indicator right away
-      streamRef.current?.getTracks().forEach(t => t.stop());
-      streamRef.current = null;
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      if (timerRef.current) clearInterval(timerRef.current);
-    }
-  };
-
-  const cancelRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      isCancelledRef.current = true; // Signal onstop to discard audio
-      mediaRecorderRef.current.stop();
-      streamRef.current?.getTracks().forEach(t => t.stop());
-      streamRef.current = null;
-      setIsRecording(false);
-      if (timerRef.current) clearInterval(timerRef.current);
-    }
-  };
 
 
   const toggleTag = (t: string) => {
@@ -640,97 +527,6 @@ export function Editor() {
           )}
         </div>
 
-        {/* Voice Memo Section */}
-        <div className="mb-8 relative z-10">
-          {localAudio ? (
-            <div className="relative p-4 rounded-[2rem] bg-white border border-border shadow-sm flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3 w-full">
-                <button
-                  type="button"
-                  className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white shadow-md hover:scale-105 transition-transform shrink-0"
-                  onClick={() => {
-                    if (audioRef.current && !audioRef.current.paused) {
-                      audioRef.current.pause();
-                      setIsPlaying(false);
-                    } else {
-                      if (audioRef.current) {
-                        audioRef.current.play();
-                      } else {
-                        const audio = new Audio(localAudio);
-                        audioRef.current = audio;
-                        audio.onended = () => setIsPlaying(false);
-                        audio.play();
-                      }
-                      setIsPlaying(true);
-                    }
-                  }}
-                >
-                  {isPlaying
-                    ? <Square className="w-5 h-5" />
-                    : <Play className="w-6 h-6 ml-1" />
-                  }
-                </button>
-                <div className="flex-1">
-                  <div className="h-2 w-full bg-secondary/30 rounded-full overflow-hidden">
-                    <div className="h-full w-full bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,rgba(255,183,209,0.5)_10px,rgba(255,183,209,0.5)_20px)] animate-[pulse_2s_linear_infinite]" />
-                  </div>
-                  <p className="text-xs font-bold text-muted-foreground mt-2 tracking-widest uppercase">
-                    {uploadingAudio ? "Uploading... ☁️" : isPlaying ? "Playing... 🎵" : "Voice Memory 🎀"}
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  if (audioRef.current) {
-                    audioRef.current.pause();
-                    audioRef.current = null;
-                  }
-                  setIsPlaying(false);
-                  setLocalAudio(null);
-                }}
-                className="w-10 h-10 rounded-full bg-secondary/10 text-red-400 flex items-center justify-center hover:bg-red-50 transition-all shrink-0"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          ) : isRecording ? (
-            <div className="w-full flex items-center justify-between gap-4 p-4 rounded-[2rem] border-2 border-primary bg-primary/5 shadow-[0_4px_15px_rgba(255,79,139,0.15)]">
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 rounded-full bg-red-500" />
-                <span className="font-heading text-primary text-xl tracking-wider">Recording...</span>
-                <span ref={timerDisplayRef} className="font-secondary font-bold text-muted-foreground bg-white px-2 py-1 rounded-md border border-border">0:00</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={cancelRecording}
-                  className="w-12 h-12 flex items-center justify-center rounded-full bg-secondary/20 text-red-400 hover:bg-red-50 hover:scale-105 active:scale-95 transition-all shadow-sm"
-                  title="Cancel Recording"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={stopRecording}
-                  className="w-12 h-12 flex items-center justify-center rounded-full bg-red-500 text-white hover:scale-105 active:scale-95 transition-all shadow-md"
-                  title="Stop & Save"
-                >
-                  <Square className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={startRecording}
-              className="w-full flex items-center justify-center gap-3 py-4 rounded-[2rem] border-2 border-dashed border-primary/30 bg-secondary/10 text-primary font-bold hover:bg-secondary/20 hover:border-primary/50 transition-all cursor-pointer"
-            >
-              <Mic className="w-5 h-5" />
-              <span>Record Voice Memo 🎤</span>
-            </button>
-          )}
-        </div>
 
         {/* Main Textarea */}
         <div
