@@ -253,11 +253,16 @@ export function Editor() {
     }, 0);
   };
 
+  const toMoroccoTime = (dateVal: number | Date) => {
+    const str = new Date(dateVal).toLocaleString('en-US', { timeZone: 'Africa/Casablanca' });
+    return new Date(str);
+  };
+
   const dateStr = isNew
-    ? format(Date.now(), 'MMMM do, yyyy')
+    ? format(toMoroccoTime(Date.now()), 'MMMM do, yyyy')
     : entries.find(e => e.id === params.id)?.createdAt
-      ? format(entries.find(e => e.id === params.id)!.createdAt, 'MMMM do, yyyy')
-      : format(Date.now(), 'MMMM do, yyyy');
+      ? format(toMoroccoTime(entries.find(e => e.id === params.id)!.createdAt), 'MMMM do, yyyy')
+      : format(toMoroccoTime(Date.now()), 'MMMM do, yyyy');
 
   const words = getWordCount(body);
   const readTime = getReadingTime(words);
@@ -556,20 +561,6 @@ export function Editor() {
           </AnimatePresence>
         </div>
 
-        {/* Sticker Bar */}
-        <div className="mb-4 relative z-10 p-3 bg-card rounded-2xl border border-border flex items-center gap-2 overflow-x-auto">
-          <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest pl-2 pr-4 whitespace-nowrap">Stickers:</span>
-          {STICKERS.map(s => (
-            <button
-              key={s}
-              onClick={() => insertSticker(s)}
-              className="p-2 rounded-xl hover:bg-secondary/50 text-primary transition-all hover:scale-110 active:scale-95 shrink-0"
-              title={`Insert ${s}`}
-            >
-              <StickerIcon name={s} className="w-6 h-6" />
-            </button>
-          ))}
-        </div>
 
         {/* Photo Upload Section */}
         <div className="mb-4 relative z-10">
