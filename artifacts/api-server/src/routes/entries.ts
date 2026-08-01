@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Request, type Response } from "express";
 import { db, entriesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { v2 as cloudinary } from "cloudinary";
@@ -16,7 +16,7 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 
 const router = Router();
 
 // GET /api/entries — list all entries newest first
-router.get("/entries", async (_req, res) => {
+router.get("/entries", async (_req: Request, res: Response) => {
   try {
     const entries = await db
       .select()
@@ -32,7 +32,7 @@ router.get("/entries", async (_req, res) => {
 });
 
 // GET /api/entries/:id
-router.get("/entries/:id", async (req, res) => {
+router.get("/entries/:id", async (req: Request, res: Response) => {
   try {
     const rows = await db
       .select()
@@ -58,7 +58,7 @@ const CreateEntrySchema = z.object({
 });
 
 // POST /api/entries
-router.post("/entries", async (req, res) => {
+router.post("/entries", async (req: Request, res: Response) => {
   try {
     const parsed = CreateEntrySchema.parse(req.body);
     const now = Date.now();
@@ -78,7 +78,7 @@ router.post("/entries", async (req, res) => {
 });
 
 // PATCH /api/entries/:id
-router.patch("/entries/:id", async (req, res) => {
+router.patch("/entries/:id", async (req: Request, res: Response) => {
   try {
     const id = req.params.id as string;
     const updates = req.body as Record<string, unknown>;
@@ -106,7 +106,7 @@ router.patch("/entries/:id", async (req, res) => {
 });
 
 // DELETE /api/entries/:id
-router.delete("/entries/:id", async (req, res) => {
+router.delete("/entries/:id", async (req: Request, res: Response) => {
   try {
     await db.delete(entriesTable).where(eq(entriesTable.id, req.params.id as string));
     res.json({ success: true });
@@ -119,7 +119,7 @@ router.delete("/entries/:id", async (req, res) => {
 router.post(
   "/entries/:id/image",
   upload.single("image"),
-  async (req, res) => {
+  async (req: Request, res: Response) => {
     try {
       if (!req.file) {
         res.status(400).json({ error: "No file provided" });
@@ -170,7 +170,7 @@ router.post(
 router.post(
   "/entries/:id/audio",
   upload.single("audio"),
-  async (req, res) => {
+  async (req: Request, res: Response) => {
     try {
       if (!req.file) {
         res.status(400).json({ error: "No file provided" });

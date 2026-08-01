@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Request, type Response } from "express";
 import Groq from "groq-sdk";
 import { pool } from "@workspace/db";
 
@@ -9,7 +9,7 @@ const groq = new Groq({
 });
 
 // GET /api/migrate — Add audio_url column (safe, idempotent)
-router.get("/migrate", async (_req, res) => {
+router.get("/migrate", async (_req: Request, res: Response) => {
   try {
     await pool.query("ALTER TABLE journal_entries ADD COLUMN IF NOT EXISTS audio_url text");
     res.json({ success: true, message: "audio_url column ready ✅" });
@@ -20,7 +20,7 @@ router.get("/migrate", async (_req, res) => {
 });
 
 // GET /api/migrate-chat — Create kitty_chat_messages table (safe, idempotent)
-router.get("/migrate-chat", async (_req, res) => {
+router.get("/migrate-chat", async (_req: Request, res: Response) => {
   try {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS kitty_chat_messages (
@@ -38,7 +38,7 @@ router.get("/migrate-chat", async (_req, res) => {
 });
 
 // POST /api/ai/suggest-mood — Analyze entry text and suggest mood & tags
-router.post("/ai/suggest-mood", async (req, res) => {
+router.post("/ai/suggest-mood", async (req: Request, res: Response) => {
   try {
     const { text } = req.body;
     if (!text) {
@@ -80,7 +80,7 @@ Respond strictly with valid JSON only, no markdown formatting.`,
 });
 
 // POST /api/ai/kitty-chat — Chat with Kitty AI about your day
-router.post("/ai/kitty-chat", async (req, res) => {
+router.post("/ai/kitty-chat", async (req: Request, res: Response) => {
   try {
     const { message, context } = req.body;
 

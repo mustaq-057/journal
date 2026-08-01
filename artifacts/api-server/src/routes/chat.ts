@@ -1,11 +1,11 @@
-import { Router } from "express";
+import { Router, type Request, type Response } from "express";
 import { db, chatMessagesTable } from "@workspace/db";
 import { randomUUID } from "node:crypto";
 
 const router = Router();
 
 // GET /api/chat — get all chat messages in order
-router.get("/chat", async (_req, res) => {
+router.get("/chat", async (_req: Request, res: Response) => {
   try {
     const messages = await db
       .select()
@@ -19,7 +19,7 @@ router.get("/chat", async (_req, res) => {
 });
 
 // POST /api/chat — save a single message
-router.post("/chat", async (req, res) => {
+router.post("/chat", async (req: Request, res: Response) => {
   try {
     const { role, content } = req.body;
     if (!role || !content) {
@@ -41,7 +41,7 @@ router.post("/chat", async (req, res) => {
 });
 
 // DELETE /api/chat — clear all chat history
-router.delete("/chat", async (_req, res) => {
+router.delete("/chat", async (_req: Request, res: Response) => {
   try {
     await db.delete(chatMessagesTable);
     res.json({ success: true });
