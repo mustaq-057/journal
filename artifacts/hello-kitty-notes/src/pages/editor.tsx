@@ -47,6 +47,9 @@ export function Editor() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<number | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
     if (isLoaded && !isNew) {
@@ -140,6 +143,7 @@ export function Editor() {
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
 
       // Pick the best supported mime type
       const mimeType = [
@@ -212,9 +216,10 @@ export function Editor() {
 
   const cancelRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.onstop = null; // Prevent upload
+      mediaRecorderRef.current.onstop = null; // Prevent upload handler from firing
       mediaRecorderRef.current.stop();
-      mediaRecorderRef.current.stream.getTracks().forEach(t => t.stop());
+      streamRef.current?.getTracks().forEach(t => t.stop());
+      streamRef.current = null;
       setIsRecording(false);
       if (timerRef.current) clearInterval(timerRef.current);
     }
@@ -631,26 +636,48 @@ export function Editor() {
               <div className="flex items-center gap-3 w-full">
                 <button
                   type="button"
-                  className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white shadow-md hover:scale-105 transition-transform"
+                  className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white shadow-md hover:scale-105 transition-transform shrink-0"
                   onClick={() => {
-                    const audio = new Audio(localAudio);
-                    audio.play();
+                    if (audioRef.current && !audioRef.current.paused) {
+                      audioRef.current.pause();
+                      setIsPlaying(false);
+                    } else {
+                      if (audioRef.current) {
+                        audioRef.current.play();
+                      } else {
+                        const audio = new Audio(localAudio);
+                        audioRef.current = audio;
+                        audio.onended = () => setIsPlaying(false);
+                        audio.play();
+                      }
+                      setIsPlaying(true);
+                    }
                   }}
                 >
-                  <Play className="w-6 h-6 ml-1" />
+                  {isPlaying
+                    ? <Square className="w-5 h-5" />
+                    : <Play className="w-6 h-6 ml-1" />
+                  }
                 </button>
                 <div className="flex-1">
                   <div className="h-2 w-full bg-secondary/30 rounded-full overflow-hidden">
                     <div className="h-full w-full bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,rgba(255,183,209,0.5)_10px,rgba(255,183,209,0.5)_20px)] animate-[pulse_2s_linear_infinite]" />
                   </div>
                   <p className="text-xs font-bold text-muted-foreground mt-2 tracking-widest uppercase">
-                    {uploadingAudio ? "Uploading... ☁️" : "Voice Memory 🎀"}
+                    {uploadingAudio ? "Uploading... ☁️" : isPlaying ? "Playing... 🎵" : "Voice Memory 🎀"}
                   </p>
                 </div>
               </div>
               <button
                 type="button"
-                onClick={() => setLocalAudio(null)}
+                onClick={() => {
+                  if (audioRef.current) {
+                    audioRef.current.pause();
+                    audioRef.current = null;
+                  }
+                  setIsPlaying(false);
+                  setLocalAudio(null);
+                }}
                 className="w-10 h-10 rounded-full bg-secondary/10 text-red-400 flex items-center justify-center hover:bg-red-50 transition-all shrink-0"
               >
                 <X className="w-5 h-5" />
@@ -695,20 +722,8 @@ export function Editor() {
         </div>
 
         {/* Main Textarea with Live Sticker Preview */}
-        <div 
-          className="relative z-10 group flex-1 cursor-text min-h-[400px]"
-          onClick={() => textareaRef.current?.focus()}
-        >
-          {/* Hidden textarea for input */}
-          <textarea
-            ref={textareaRef}
-            placeholder="What happened today? Write your heart out..."
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            className="w-full h-full min-h-[400px] text-xl font-secondary leading-[1.8] bg-transparent border-none outline-none resize-none focus:ring-0 p-4 text-transparent caret-foreground selection:bg-primary/20"
-            style={{ caretColor: 'var(--foreground)' }}
-          />
-          {/* Live render overlay — shows icons instead of [name] tokens */}
+        <div className="relative z-10 flex-1 min-h-[400px]">
+          {/* Overlay renders sticker icons - pointer-events none so clicks pass through to textarea */}
           <div
             aria-hidden
             className="absolute top-0 left-0 w-full h-full p-4 text-xl font-secondary leading-[1.8] text-foreground pointer-events-none whitespace-pre-wrap break-words overflow-hidden"
@@ -718,6 +733,15 @@ export function Editor() {
               : <span className="text-muted-foreground/40">What happened today? Write your heart out...</span>
             }
           </div>
+          {/* Textarea sits on top - transparent text so overlay shows through */}
+          <textarea
+            ref={textareaRef}
+            placeholder=""
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            className="relative w-full h-full min-h-[400px] text-xl font-secondary leading-[1.8] bg-transparent border-none outline-none resize-none focus:ring-0 p-4 text-transparent caret-foreground selection:bg-primary/20 z-10"
+            style={{ caretColor: 'var(--foreground)' }}
+          />
         </div>
       </div>
 
