@@ -1,7 +1,7 @@
 {
   "version": 2,
   "buildCommand": "pnpm --filter @workspace/db run build && pnpm --filter @workspace/api-server run build && pnpm --filter @workspace/hello-kitty-notes run build",
-  "outputDirectory": "artifacts/hello-kitty-notes/dist/public",
+  "outputDirectory": "artifacts/hello-kitty-notes/dist",
   "installCommand": "pnpm install",
   "functions": {
     "api/index.ts": {
