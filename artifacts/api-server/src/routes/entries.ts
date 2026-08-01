@@ -1,4 +1,4 @@
-import { Router, type IRouter } from "express";
+import { Router } from "express";
 import { db, entriesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { v2 as cloudinary } from "cloudinary";
@@ -13,7 +13,7 @@ if (process.env.CLOUDINARY_URL) {
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
-const router: IRouter = Router();
+const router = Router();
 
 // GET /api/entries — list all entries newest first
 router.get("/entries", async (_req, res) => {

@@ -1,8 +1,8 @@
-import { Router, type IRouter } from "express";
+import { Router } from "express";
 import { db, chatMessagesTable } from "@workspace/db";
 import { randomUUID } from "node:crypto";
 
-const router: IRouter = Router();
+const router = Router();
 
 // GET /api/chat — get all chat messages in order
 router.get("/chat", async (_req, res) => {

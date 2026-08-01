@@ -1,8 +1,8 @@
-import { Router, type IRouter } from "express";
+import { Router } from "express";
 import Groq from "groq-sdk";
 import { pool } from "@workspace/db";
 
-const router: IRouter = Router();
+const router = Router();
 
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY || "",
