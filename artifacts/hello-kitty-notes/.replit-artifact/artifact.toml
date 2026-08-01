@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Hello Kitty Journal"
+description = "A cute Hello Kitty themed note-taking and journaling web app. Users can create, edit, and organize personal journal notes in a playful, pastel-pink kawaii aesthetic. Frontend only — no backend."
+version = "1.0.0"
+id = "artifacts/hello-kitty-notes"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19967
+
+[services.development]
+run = "pnpm --filter @workspace/hello-kitty-notes run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/hello-kitty-notes", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/hello-kitty-notes/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19967"
+BASE_PATH = "/"
