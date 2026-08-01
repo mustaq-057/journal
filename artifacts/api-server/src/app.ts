@@ -43,7 +43,7 @@ const frontendDistPath = path.resolve(__dirname, "../../hello-kitty-notes/dist")
 app.use(express.static(frontendDistPath));
 
 // Fallback for SPA (Single Page Application) routing
-app.use((req, res) => {
+app.use((req: express.Request, res: express.Response) => {
   res.sendFile(path.resolve(frontendDistPath, "index.html"));
 });
 
