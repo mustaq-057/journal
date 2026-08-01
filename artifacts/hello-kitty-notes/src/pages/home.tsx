@@ -266,7 +266,7 @@ export function Home() {
                           {/* Character count */}
                           <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase tracking-wider opacity-60">
                             <StickerIcon name="star" className="w-3 h-3" />
-                            <span>{entry.body.length} characters</span>
+                            <span>{entry.body.replace(/<[^>]*>/g, '').trim().length} characters</span>
                           </div>
                         </div>
                       </div>
