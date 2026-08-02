@@ -4,7 +4,8 @@ import { pool } from "@workspace/db";
 
 const router = Router();
 
-const groq = new Groq({
+// Initialize lazily to ensure Vercel environment variables are fully loaded at request time
+const getGroq = () => new Groq({
   apiKey: process.env.GROQ_API_KEY || "",
 });
 
@@ -48,6 +49,7 @@ router.post("/ai/suggest-mood", async (req: any, res: any) => {
       return;
     }
 
+    const groq = getGroq();
     const completion = await groq.chat.completions.create({
       messages: [
         {
@@ -93,6 +95,7 @@ router.post("/ai/kitty-chat", async (req: any, res: any) => {
   try {
     const { message, context } = req.body;
 
+    const groq = getGroq();
     const completion = await groq.chat.completions.create({
       messages: [
         {
