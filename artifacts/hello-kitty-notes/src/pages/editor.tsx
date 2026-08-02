@@ -203,7 +203,7 @@ export function Editor() {
       setTimeout(() => {
         setShowSaveAnim(false);
         if (isNew) setLocation(`/entry/${entryId}`);
-      }, 800);
+      }, 2000);
     } catch (err) {
       setShowSaveAnim(false);
       setKittyModal({ open: true, message: "Oops! I couldn't save your memory. 😿" });
