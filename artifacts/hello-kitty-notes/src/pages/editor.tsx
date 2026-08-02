@@ -82,29 +82,32 @@ const CustomAudioPlayer = ({ src, onRemove, label }: { src: string; onRemove: ()
   return (
     <div className="relative rounded-[2rem] border border-primary/20 bg-white flex flex-col px-4 pt-2 pb-3 shadow-sm shrink-0 min-w-[260px] max-w-[360px]">
       <audio ref={audioRef} src={src} className="hidden" />
-      {label && <span className="text-[10px] font-bold text-primary/60 uppercase tracking-widest mb-1">{label}</span>}
+      {label && <span className="text-[10px] font-bold text-primary/60 uppercase tracking-widest mb-2">{label}</span>}
       
-      <button 
-        onClick={togglePlayPause}
-        className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-[#e85d95] text-white flex items-center justify-center shadow-md hover:scale-105 active:scale-95 transition-all shrink-0"
-      >
-        {isPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 ml-1 fill-current" />}
-      </button>
+      {/* Controls row: play button + slider side by side */}
+      <div className="flex items-center gap-3">
+        <button 
+          onClick={togglePlayPause}
+          className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-[#e85d95] text-white flex items-center justify-center shadow-md hover:scale-105 active:scale-95 transition-all shrink-0"
+        >
+          {isPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 ml-1 fill-current" />}
+        </button>
 
-      <div className="flex-1 flex flex-col justify-center">
-        <input 
-          type="range" 
-          min="0" 
-          max={duration || 100} 
-          value={currentTime} 
-          onChange={handleSeek}
-          className="w-full h-1.5 bg-primary/10 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-sm"
-        />
-        <div className="flex justify-between mt-1 text-[10px] font-bold text-primary/70 tracking-wider">
-          <span>{formatTime(currentTime)}</span>
-          <div className="flex items-center gap-1">
-            <StickerIcon name="bow" className="w-2.5 h-2.5 opacity-50" />
-            <span>{formatTime(duration)}</span>
+        <div className="flex-1 flex flex-col justify-center">
+          <input 
+            type="range" 
+            min="0" 
+            max={duration || 100} 
+            value={currentTime} 
+            onChange={handleSeek}
+            className="w-full h-1.5 bg-primary/10 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-sm"
+          />
+          <div className="flex justify-between mt-1 text-[10px] font-bold text-primary/70 tracking-wider">
+            <span>{formatTime(currentTime)}</span>
+            <div className="flex items-center gap-1">
+              <StickerIcon name="bow" className="w-2.5 h-2.5 opacity-50" />
+              <span>{formatTime(duration)}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -118,6 +121,7 @@ const CustomAudioPlayer = ({ src, onRemove, label }: { src: string; onRemove: ()
     </div>
   );
 };
+
 
 export function Editor() {
   const [, setLocation] = useLocation();
