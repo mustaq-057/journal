@@ -40,8 +40,8 @@ const ALLOWED_ORIGINS = [
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (mobile apps, Postman, server-to-server)
-      if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+      // Allow requests with no origin (mobile apps), our specific origins, or any Vercel deployment URL
+      if (!origin || ALLOWED_ORIGINS.includes(origin) || origin.endsWith('.vercel.app') || origin === 'capacitor://localhost' || origin === 'http://localhost') {
         callback(null, true);
       } else {
         callback(new Error(`CORS blocked: ${origin}`));
