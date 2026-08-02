@@ -97,6 +97,7 @@ export function KittyChat() {
       });
 
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Server error: ' + res.status);
       if (data.reply) {
         // Optimistic UI update for AI reply
         const tempAiMsg: Message = { role: 'assistant', content: data.reply };
@@ -104,8 +105,8 @@ export function KittyChat() {
         // Fire off DB save for AI message in background
         saveMessage('assistant', data.reply).catch(console.error);
       }
-    } catch {
-      const errMsg = "oh no i lost signal for a second. you were saying something, please don't leave me hanging darling";
+    } catch (err: any) {
+      const errMsg = `oh no i lost signal for a second... [Error: ${err.message || String(err)}]`;
       await saveMessage('assistant', errMsg).catch(() => null);
       setMessages(prev => [...prev, { role: 'assistant', content: errMsg }]);
     } finally {
