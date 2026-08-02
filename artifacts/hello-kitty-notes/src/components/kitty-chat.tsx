@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Trash2, RotateCcw } from 'lucide-react';
+import { Send, Trash2 } from 'lucide-react';
 import { StickerIcon } from './hello-kitty-svgs';
 import { cn } from '@/lib/utils';
 
@@ -12,10 +12,8 @@ interface Message {
 
 const STARTER_PROMPTS = [
   "I had a tough day...",
-  "Help me write something 📝",
-  "Explain something to me",
+  "Something exciting happened!",
   "I've been overthinking again",
-  "Give me advice on...",
   "Tell me something honest",
 ];
 
@@ -30,11 +28,9 @@ export function KittyChat() {
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingHistory, setIsFetchingHistory] = useState(true);
   const [showStarters, setShowStarters] = useState(true);
-  const [lastUserMessage, setLastUserMessage] = useState<string | null>(null);
-  const [hasError, setHasError] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  
+
   const baseUrl = import.meta.env.VITE_API_URL || '';
 
   const scrollToBottom = () => {
@@ -78,11 +74,9 @@ export function KittyChat() {
   const sendMessage = async (text: string) => {
     if (!text.trim() || isLoading) return;
     setShowStarters(false);
-    setHasError(false);
     const userMessage = text.trim();
     setInput('');
     setIsLoading(true);
-    setLastUserMessage(userMessage);
 
     // Optimistic UI update: show message immediately
     const tempUserMsg: Message = { role: 'user', content: userMessage };
@@ -98,7 +92,7 @@ export function KittyChat() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: userMessage,
-          context: messages.slice(-10).map(m => ({ role: m.role, content: m.content })),
+          context: messages.slice(-8).map(m => ({ role: m.role, content: m.content })),
         }),
       });
 
@@ -112,28 +106,13 @@ export function KittyChat() {
         saveMessage('assistant', data.reply).catch(console.error);
       }
     } catch (err: any) {
-      setHasError(true);
-      const errMsg = `oh no i lost signal... tap retry and i'll try again 💫`;
+      const errMsg = `oh no i lost signal for a second... [Error: ${err.message || String(err)}]`;
+      await saveMessage('assistant', errMsg).catch(() => null);
       setMessages(prev => [...prev, { role: 'assistant', content: errMsg }]);
     } finally {
       setIsLoading(false);
       inputRef.current?.focus();
     }
-  };
-
-  const retryLastMessage = () => {
-    if (!lastUserMessage || isLoading) return;
-    // Remove the last error message from the AI and the last user message
-    setMessages(prev => {
-      const msgs = [...prev];
-      // Remove trailing assistant error and the user message before it
-      if (msgs.length >= 2 && msgs[msgs.length - 1].role === 'assistant' && msgs[msgs.length - 2].role === 'user') {
-        return msgs.slice(0, -2);
-      }
-      return msgs;
-    });
-    setHasError(false);
-    sendMessage(lastUserMessage);
   };
 
   const clearHistory = async () => {
@@ -293,27 +272,10 @@ export function KittyChat() {
             type="text"
             value={input}
             onChange={e => setInput(e.target.value)}
-            placeholder={hasError ? "type again or tap retry…" : "ask me anything…"}
+            placeholder="say something to me…"
             className="flex-1 bg-transparent border-none outline-none font-secondary text-base placeholder:text-muted-foreground/50 text-foreground"
             disabled={isLoading || isFetchingHistory}
           />
-          <AnimatePresence>
-            {hasError && lastUserMessage && (
-              <motion.button
-                type="button"
-                key="retry"
-                initial={{ opacity: 0, scale: 0.5 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.5 }}
-                onClick={retryLastMessage}
-                disabled={isLoading}
-                title="Retry last message"
-                className="w-10 h-10 rounded-full bg-amber-400 text-white flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-md cursor-pointer disabled:opacity-40"
-              >
-                <RotateCcw className="w-4 h-4" />
-              </motion.button>
-            )}
-          </AnimatePresence>
           <button
             type="submit"
             disabled={!input.trim() || isLoading}
@@ -323,7 +285,7 @@ export function KittyChat() {
           </button>
         </form>
         <p className="text-center text-[10px] font-bold text-muted-foreground/50 mt-2 tracking-widest uppercase">
-          ask me anything ✦ i'm always here
+          Kitty reads between the lines
         </p>
       </div>
     </div>
