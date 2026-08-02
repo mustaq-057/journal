@@ -10,21 +10,17 @@ interface PinLockProps {
 // Attempt native biometric auth via Capacitor if available
 async function attemptBiometric(): Promise<boolean> {
   try {
-    // Dynamically import the plugin — it won't exist in a web browser, only in the Android shell
     // @ts-ignore — package is installed in the Android build environment, not local dev
-    const { BiometricAuth } = await import('@capacitor-community/biometric-auth');
+    const { BiometricAuth } = await import('@aparajita/capacitor-biometric-auth');
     const result = await BiometricAuth.checkBiometry();
     if (!result.isAvailable) return false;
 
     await BiometricAuth.authenticate({
       reason: "Unlock Sara's Diary",
-      title: "Kitty AI Diary",
-      subtitle: "Use your fingerprint to unlock",
       cancelTitle: "Use PIN instead",
     });
     return true;
   } catch (e: any) {
-    // User cancelled or biometric failed — fall back to PIN
     console.log('Biometric cancelled or failed:', e?.message);
     return false;
   }
@@ -40,7 +36,7 @@ export function PinLock({ onUnlock }: PinLockProps) {
     (async () => {
       try {
         // @ts-ignore
-        const { BiometricAuth } = await import('@capacitor-community/biometric-auth');
+        const { BiometricAuth } = await import('@aparajita/capacitor-biometric-auth');
         const { isAvailable } = await BiometricAuth.checkBiometry();
         setBiometricAvailable(isAvailable);
       } catch {
