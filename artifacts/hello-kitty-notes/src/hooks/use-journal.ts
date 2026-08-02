@@ -28,6 +28,18 @@ export function getReadingTime(words: number) {
   return Math.max(1, Math.ceil(words / 200));
 }
 
+export function parseMediaUrls(url: string | null | undefined): string[] {
+  if (!url) return [];
+  try {
+    if (url.startsWith('[')) {
+      return JSON.parse(url);
+    }
+    return [url];
+  } catch {
+    return [url];
+  }
+}
+
 const baseUrl = import.meta.env.VITE_API_URL || '';
 
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useParams } from 'wouter';
-import { useJournal, Mood, ThemeColor, getWordCount, getReadingTime } from '@/hooks/use-journal';
+import { useJournal, Mood, ThemeColor, getWordCount, getReadingTime, parseMediaUrls } from '@/hooks/use-journal';
 import { MoodIcon } from '@/components/mood-icon';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -162,13 +162,11 @@ export function Editor() {
         setColor(entry.color);
         setTags(entry.tags || []);
         // Load existing images
-        const imgs: { url: string }[] = [];
-        if (entry.imageUrl) imgs.push({ url: entry.imageUrl });
-        setLocalImages(imgs);
+        const parsedImgs = parseMediaUrls(entry.imageUrl);
+        setLocalImages(parsedImgs.map(url => ({ url })));
         // Load existing audios
-        const auds: { url: string }[] = [];
-        if (entry.audioUrl) auds.push({ url: entry.audioUrl });
-        setLocalAudios(auds);
+        const parsedAuds = parseMediaUrls(entry.audioUrl);
+        setLocalAudios(parsedAuds.map(url => ({ url })));
       } else {
         setLocation('/');
       }

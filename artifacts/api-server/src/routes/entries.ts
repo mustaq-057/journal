@@ -157,9 +157,23 @@ router.post(
         stream.end(req.file!.buffer);
       });
 
+      // Parse existing images if any
+      let currentImages: string[] = [];
+      try {
+        if (rows[0].imageUrl) {
+          if (rows[0].imageUrl.startsWith('[')) {
+            currentImages = JSON.parse(rows[0].imageUrl);
+          } else {
+            currentImages = [rows[0].imageUrl];
+          }
+        }
+      } catch (e) {}
+
+      currentImages.push(result.secure_url);
+
       const updated = await db
         .update(entriesTable)
-        .set({ imageUrl: result.secure_url, updatedAt: Date.now() })
+        .set({ imageUrl: JSON.stringify(currentImages), updatedAt: Date.now() })
         .where(eq(entriesTable.id, req.params.id as string))
         .returning();
 
@@ -207,9 +221,23 @@ router.post(
         stream.end(req.file!.buffer);
       });
 
+      // Parse existing audios if any
+      let currentAudios: string[] = [];
+      try {
+        if (rows[0].audioUrl) {
+          if (rows[0].audioUrl.startsWith('[')) {
+            currentAudios = JSON.parse(rows[0].audioUrl);
+          } else {
+            currentAudios = [rows[0].audioUrl];
+          }
+        }
+      } catch (e) {}
+
+      currentAudios.push(result.secure_url);
+
       const updated = await db
         .update(entriesTable)
-        .set({ audioUrl: result.secure_url, updatedAt: Date.now() })
+        .set({ audioUrl: JSON.stringify(currentAudios), updatedAt: Date.now() })
         .where(eq(entriesTable.id, req.params.id as string))
         .returning();
 

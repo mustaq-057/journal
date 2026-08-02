@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'wouter';
-import { Entry, getWordCount, getReadingTime } from '@/hooks/use-journal';
+import { Entry, getWordCount, getReadingTime, parseMediaUrls } from '@/hooks/use-journal';
 import { MoodIcon } from '@/components/mood-icon';
 import { format } from 'date-fns';
 import { StickerIcon } from '@/components/hello-kitty-svgs';
@@ -89,9 +89,13 @@ export function SharedEntry() {
           </div>
         </div>
 
-        {entry.imageUrl && (
-          <div className="relative z-10 rounded-[2rem] overflow-hidden border border-border shadow-sm mb-8">
-            <img src={entry.imageUrl} alt="Memory photo" className="w-full max-h-[500px] object-cover" />
+        {parseMediaUrls(entry.imageUrl).length > 0 && (
+          <div className="relative z-10 flex flex-wrap gap-4 mb-8">
+            {parseMediaUrls(entry.imageUrl).map((url, i) => (
+              <div key={i} className="rounded-[2rem] overflow-hidden border border-border shadow-sm flex-1 min-w-[250px]">
+                <img src={url} alt={`Memory photo ${i + 1}`} className="w-full max-h-[500px] object-cover" />
+              </div>
+            ))}
           </div>
         )}
 
