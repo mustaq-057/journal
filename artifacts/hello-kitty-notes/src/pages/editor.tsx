@@ -41,6 +41,7 @@ export function Editor() {
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
+  const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
   
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -167,7 +168,7 @@ export function Editor() {
         });
       }, 1000);
     } catch (err) {
-      setKittyModal({ open: true, message: "I couldn't access your microphone! Please check permissions. 🌸" });
+      setKittyModal({ open: true, message: "I couldn't access your microphone! Please check your Android App Permissions in Settings and allow Microphone access. 🌸" });
     }
   };
 
@@ -277,6 +278,30 @@ export function Editor() {
                 </button>
               </div>
             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {fullscreenImage && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 p-4"
+            onClick={() => setFullscreenImage(null)}
+          >
+            <motion.img
+              initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}
+              src={fullscreenImage}
+              alt="Fullscreen memory"
+              className="max-w-full max-h-full object-contain rounded-xl"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <button
+              onClick={() => setFullscreenImage(null)}
+              className="absolute top-6 right-6 w-10 h-10 rounded-full bg-white/20 text-white flex items-center justify-center hover:bg-white/40 transition-all backdrop-blur-sm"
+            >
+              <X className="w-6 h-6" />
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -553,10 +578,18 @@ export function Editor() {
           
           {/* Photo Block */}
           {localImage ? (
-            <div className="relative w-24 h-24 rounded-2xl overflow-hidden border border-border shadow-sm group shrink-0">
-              <img src={localImage} alt="Memory" className="w-full h-full object-cover" />
-              <button onClick={() => { setLocalImage(null); if (imageInputRef.current) imageInputRef.current.value = ''; }} className="absolute top-1 right-1 w-6 h-6 rounded-full bg-white/90 text-red-400 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-white shadow">
-                <X className="w-3 h-3" />
+            <div className="relative w-24 h-24 rounded-2xl overflow-hidden border border-border shadow-sm shrink-0">
+              <img 
+                src={localImage} 
+                alt="Memory" 
+                className="w-full h-full object-cover cursor-pointer" 
+                onClick={() => setFullscreenImage(localImage)}
+              />
+              <button 
+                onClick={() => { setLocalImage(null); if (imageInputRef.current) imageInputRef.current.value = ''; }} 
+                className="absolute top-1 right-1 w-7 h-7 rounded-full bg-white text-red-500 flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.15)] hover:bg-red-50 active:scale-95 transition-all z-10"
+              >
+                <X className="w-4 h-4" />
               </button>
             </div>
           ) : (
@@ -567,10 +600,13 @@ export function Editor() {
 
           {/* Audio Block */}
           {localAudio ? (
-            <div className="relative h-12 flex-1 min-w-[200px] max-w-[300px] rounded-2xl border border-primary/20 bg-white flex items-center px-3 shadow-sm group">
+            <div className="relative h-12 flex-1 min-w-[200px] max-w-[300px] rounded-2xl border border-primary/20 bg-white flex items-center px-3 shadow-sm">
               <audio src={localAudio} controls className="w-full h-8" />
-              <button onClick={() => { setLocalAudio(null); setAudioBlob(null); }} className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-400 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow hover:bg-red-500">
-                <X className="w-3 h-3" />
+              <button 
+                onClick={() => { setLocalAudio(null); setAudioBlob(null); }} 
+                className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-red-500 text-white flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.2)] hover:bg-red-600 active:scale-95 transition-all z-10"
+              >
+                <X className="w-4 h-4" />
               </button>
             </div>
           ) : (
