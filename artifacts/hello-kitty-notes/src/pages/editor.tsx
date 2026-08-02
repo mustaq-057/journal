@@ -600,11 +600,11 @@ export function Editor() {
 
           {/* Audio Block */}
           {localAudio ? (
-            <div className="relative h-12 flex-1 min-w-[200px] max-w-[300px] rounded-2xl border border-primary/20 bg-white flex items-center px-3 shadow-sm">
-              <audio src={localAudio} controls className="w-full h-8" />
+            <div className="relative flex-1 min-w-[260px] max-w-[400px] rounded-[1.5rem] border border-primary/20 bg-white flex items-center p-2 shadow-sm shrink-0">
+              <audio src={localAudio} controls className="w-full rounded-full" />
               <button 
                 onClick={() => { setLocalAudio(null); setAudioBlob(null); }} 
-                className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-red-500 text-white flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.2)] hover:bg-red-600 active:scale-95 transition-all z-10"
+                className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.2)] hover:bg-red-600 active:scale-95 transition-all z-10 border-2 border-white"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -613,14 +613,14 @@ export function Editor() {
             <button 
               onClick={isRecording ? stopRecording : startRecording} 
               className={cn(
-                "h-12 px-4 rounded-2xl font-bold transition-all flex items-center gap-2 text-sm shrink-0",
+                "h-12 px-5 rounded-[1.5rem] font-bold transition-all flex items-center justify-center gap-2 text-sm shrink-0 min-w-[130px]",
                 isRecording 
                   ? "bg-red-500 text-white shadow-lg animate-pulse border-2 border-red-600" 
                   : "border-2 border-dashed border-primary/30 text-primary hover:bg-white/50"
               )}
             >
               {isRecording ? (
-                <><Square className="w-4 h-4" /> {formatTime(recordingTime)}</>
+                <><Square className="w-4 h-4" /> <span className="w-10 text-left">{formatTime(recordingTime)}</span></>
               ) : (
                 <><Mic className="w-4 h-4" /> Voice Note</>
               )}
