@@ -136,7 +136,7 @@ export function Home() {
           
           <div className="relative z-10 text-center md:text-left flex-1">
             <h2 className="font-heading text-4xl md:text-5xl text-primary drop-shadow-sm mb-4 leading-tight">
-              Welcome back, darling!
+              Welcome back, Sara!
             </h2>
             <p className="text-muted-foreground font-secondary text-xl font-medium max-w-md">
               Your journal is a safe place to dream, reflect, and smile.
