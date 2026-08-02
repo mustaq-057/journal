@@ -10,6 +10,7 @@ import { Archive } from '@/pages/archive';
 import { Kitty } from '@/pages/kitty';
 import { Settings } from '@/pages/settings';
 import { SharedEntry } from '@/pages/shared-entry';
+import { JournalProvider } from '@/hooks/use-journal';
 
 const queryClient = new QueryClient();
 
@@ -65,12 +66,14 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-        <AnimatePresence>
-          {isLocked && <PinLock onUnlock={() => setIsLocked(false)} key="lock" />}
-        </AnimatePresence>
-        {!isLocked && <Router />}
-      </WouterRouter>
+      <JournalProvider>
+        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
+          <AnimatePresence>
+            {isLocked && <PinLock onUnlock={() => setIsLocked(false)} key="lock" />}
+          </AnimatePresence>
+          {!isLocked && <Router />}
+        </WouterRouter>
+      </JournalProvider>
     </QueryClientProvider>
   );
 }

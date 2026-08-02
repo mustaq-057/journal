@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, createContext, useContext } from 'react';
 
 export type Mood = 'happy' | 'sad' | 'excited' | 'calm' | 'tired' | 'loved' | (string & {});
 export type ThemeColor = 'blush' | 'lavender' | 'mint' | 'peach' | 'sky' | (string & {});
@@ -51,7 +51,7 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export function useJournal() {
+function useJournalInner() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -152,4 +152,17 @@ export function useJournal() {
     uploadAudio,
     refresh: loadEntries,
   };
+}
+
+const JournalContext = createContext<ReturnType<typeof useJournalInner> | null>(null);
+
+export function JournalProvider({ children }: { children: React.ReactNode }) {
+  const value = useJournalInner();
+  return <JournalContext.Provider value={value}>{children}</JournalContext.Provider>;
+}
+
+export function useJournal() {
+  const ctx = useContext(JournalContext);
+  if (!ctx) throw new Error('useJournal must be used within JournalProvider');
+  return ctx;
 }
