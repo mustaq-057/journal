@@ -180,20 +180,30 @@ export function Editor() {
 
     try {
       let entryId = params.id as string;
+
+      // Separate kept (existing) URLs from new uploads
+      const keptImageUrls = localImages.filter(img => !img.file).map(img => img.url);
+      const keptAudioUrls = localAudios.filter(aud => !aud.blob).map(aud => aud.url);
+
       if (isNew) {
         const entry = await addEntry({ title, body, mood, color, tags });
         entryId = entry.id;
       } else {
-        await updateEntry(entryId, { title, body, mood, color, tags });
+        // Pass the kept URLs so any deleted images/audios are removed on the server
+        await updateEntry(entryId, {
+          title, body, mood, color, tags,
+          imageUrl: JSON.stringify(keptImageUrls),
+          audioUrl: JSON.stringify(keptAudioUrls),
+        });
       }
 
-      // Upload newly added images (those that have a File object)
+      // Upload newly added images (those that have a File object — will append to kept list on server)
       for (const img of localImages) {
         if (img.file) {
           await uploadImage(entryId, img.file);
         }
       }
-      // Upload newly added audios (those that have a Blob)
+      // Upload newly added audios (those that have a Blob — will append to kept list on server)
       for (const aud of localAudios) {
         if (aud.blob) {
           await uploadAudio(entryId, aud.blob);
@@ -203,7 +213,7 @@ export function Editor() {
       setTimeout(() => {
         setShowSaveAnim(false);
         if (isNew) setLocation(`/entry/${entryId}`);
-      }, 2000);
+      }, 1500);
     } catch (err) {
       setShowSaveAnim(false);
       setKittyModal({ open: true, message: "Oops! I couldn't save your memory. 😿" });
