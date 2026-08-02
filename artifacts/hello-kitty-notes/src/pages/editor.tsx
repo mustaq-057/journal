@@ -21,7 +21,7 @@ const COLORS: { id: ThemeColor; value: string; label: string }[] = [
 const TAG_OPTIONS = ["happy day", "self care", "friendship", "adventure", "dream", "love", "cozy"];
 const STICKERS = ["heart", "star", "bow", "cake", "flower", "paw", "cloud", "rainbow"];
 
-const CustomAudioPlayer = ({ src, onRemove }: { src: string; onRemove: () => void }) => {
+const CustomAudioPlayer = ({ src, onRemove, label }: { src: string; onRemove: () => void; label?: string }) => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -80,8 +80,9 @@ const CustomAudioPlayer = ({ src, onRemove }: { src: string; onRemove: () => voi
   };
 
   return (
-    <div className="relative h-14 flex-1 min-w-[260px] max-w-[400px] rounded-[2rem] border border-primary/20 bg-white flex items-center px-4 shadow-sm shrink-0 gap-3">
+    <div className="relative rounded-[2rem] border border-primary/20 bg-white flex flex-col px-4 pt-2 pb-3 shadow-sm shrink-0 min-w-[260px] max-w-[360px]">
       <audio ref={audioRef} src={src} className="hidden" />
+      {label && <span className="text-[10px] font-bold text-primary/60 uppercase tracking-widest mb-1">{label}</span>}
       
       <button 
         onClick={togglePlayPause}
@@ -132,10 +133,9 @@ export function Editor() {
   const [showSaveAnim, setShowSaveAnim] = useState(false);
   const [isTagPickerOpen, setIsTagPickerOpen] = useState(false);
   const [kittyModal, setKittyModal] = useState<{ open: boolean; message: string; onConfirm?: () => void }>({ open: false, message: '' });
-  const [localImage, setLocalImage] = useState<string | null>(null);
+  const [localImages, setLocalImages] = useState<{ url: string; file?: File }[]>([]);
   const [uploadingImage, setUploadingImage] = useState(false);
-  const [localAudio, setLocalAudio] = useState<string | null>(null);
-  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [localAudios, setLocalAudios] = useState<{ url: string; blob?: Blob }[]>([]);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
@@ -144,6 +144,9 @@ export function Editor() {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const MAX_PHOTOS = 5;
+  const MAX_VOICES = 2;
 
   useEffect(() => {
     if (isLoaded && !isNew) {
@@ -154,8 +157,14 @@ export function Editor() {
         setMood(entry.mood);
         setColor(entry.color);
         setTags(entry.tags || []);
-        if (entry.imageUrl) setLocalImage(entry.imageUrl);
-        if (entry.audioUrl) setLocalAudio(entry.audioUrl);
+        // Load existing images
+        const imgs: { url: string }[] = [];
+        if (entry.imageUrl) imgs.push({ url: entry.imageUrl });
+        setLocalImages(imgs);
+        // Load existing audios
+        const auds: { url: string }[] = [];
+        if (entry.audioUrl) auds.push({ url: entry.audioUrl });
+        setLocalAudios(auds);
       } else {
         setLocation('/');
       }
@@ -163,7 +172,7 @@ export function Editor() {
   }, [isLoaded, isNew, params.id, entries, setLocation]);
 
   const handleSave = async () => {
-    if (!title.trim() && !body.trim() && !localImage && !localAudio) return;
+    if (!title.trim() && !body.trim() && localImages.length === 0 && localAudios.length === 0) return;
 
     setShowSaveAnim(true);
 
@@ -176,12 +185,17 @@ export function Editor() {
         await updateEntry(entryId, { title, body, mood, color, tags });
       }
 
-      // Upload newly added media
-      if (imageInputRef.current?.files?.[0]) {
-        await uploadImage(entryId, imageInputRef.current.files[0]);
+      // Upload newly added images (those that have a File object)
+      for (const img of localImages) {
+        if (img.file) {
+          await uploadImage(entryId, img.file);
+        }
       }
-      if (audioBlob) {
-        await uploadAudio(entryId, audioBlob);
+      // Upload newly added audios (those that have a Blob)
+      for (const aud of localAudios) {
+        if (aud.blob) {
+          await uploadAudio(entryId, aud.blob);
+        }
       }
 
       setTimeout(() => {
@@ -230,13 +244,23 @@ export function Editor() {
   };
 
   const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const localUrl = URL.createObjectURL(file);
-    setLocalImage(localUrl);
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    if (localImages.length + files.length > MAX_PHOTOS) {
+      setKittyModal({ open: true, message: `You can only attach up to ${MAX_PHOTOS} photos per memory! 📸` });
+      e.target.value = '';
+      return;
+    }
+    const newImgs = files.map(file => ({ url: URL.createObjectURL(file), file }));
+    setLocalImages(prev => [...prev, ...newImgs]);
+    e.target.value = '';
   };
 
   const startRecording = async () => {
+    if (localAudios.length >= MAX_VOICES) {
+      setKittyModal({ open: true, message: `You can only record up to ${MAX_VOICES} voice notes per memory! \ud83c\udfa4` });
+      return;
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const recorder = new MediaRecorder(stream);
@@ -246,8 +270,7 @@ export function Editor() {
       recorder.ondataavailable = e => chunks.push(e.data);
       recorder.onstop = () => {
         const blob = new Blob(chunks, { type: 'audio/webm' });
-        setAudioBlob(blob);
-        setLocalAudio(URL.createObjectURL(blob));
+        setLocalAudios(prev => [...prev, { url: URL.createObjectURL(blob), blob }]);
         stream.getTracks().forEach(t => t.stop());
       };
 
@@ -669,55 +692,68 @@ export function Editor() {
         </div>
 
 
-        {/* Compact Media Section (Photo & Voice) */}
-        <div className="mb-6 relative z-10 flex flex-wrap gap-4 items-center bg-secondary/10 p-4 rounded-[2rem] border border-primary/10">
-          <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoSelect} />
+        {/* Compact Media Section (Photos & Voice) */}
+        <div className="mb-6 relative z-10 bg-secondary/10 p-4 rounded-[2rem] border border-primary/10">
+          <input ref={imageInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handlePhotoSelect} />
           
-          {/* Photo Block */}
-          {localImage ? (
-            <div className="relative w-24 h-24 rounded-2xl overflow-hidden border border-border shadow-sm shrink-0">
-              <img 
-                src={localImage} 
-                alt="Memory" 
-                className="w-full h-full object-cover cursor-pointer" 
-                onClick={() => setFullscreenImage(localImage)}
-              />
-              <button 
-                onClick={() => { setLocalImage(null); if (imageInputRef.current) imageInputRef.current.value = ''; }} 
-                className="absolute top-1 right-1 w-7 h-7 rounded-full bg-white text-red-500 flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.15)] hover:bg-red-50 active:scale-95 transition-all z-10"
-              >
-                <X className="w-4 h-4" />
+          {/* Photos Row */}
+          <div className="flex flex-wrap gap-3 items-center mb-3">
+            {localImages.map((img, idx) => (
+              <div key={idx} className="relative w-24 h-24 rounded-2xl overflow-hidden border border-border shadow-sm shrink-0">
+                <img 
+                  src={img.url} 
+                  alt={`Memory ${idx + 1}`} 
+                  className="w-full h-full object-cover cursor-pointer" 
+                  onClick={() => setFullscreenImage(img.url)}
+                />
+                <button 
+                  onClick={() => setLocalImages(prev => prev.filter((_, i) => i !== idx))} 
+                  className="absolute top-1 right-1 w-7 h-7 rounded-full bg-white text-red-500 flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.15)] hover:bg-red-50 active:scale-95 transition-all z-10"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+            {localImages.length < MAX_PHOTOS && (
+              <button onClick={() => imageInputRef.current?.click()} className="w-24 h-24 rounded-2xl border-2 border-dashed border-primary/30 text-primary font-bold hover:bg-white/50 transition-all flex flex-col items-center justify-center gap-1 shrink-0">
+                <Camera className="w-5 h-5" />
+                <span className="text-xs">{localImages.length > 0 ? `+Photo` : `Photo`}</span>
+                <span className="text-[10px] text-primary/50">{localImages.length}/{MAX_PHOTOS}</span>
               </button>
-            </div>
-          ) : (
-            <button onClick={() => imageInputRef.current?.click()} className="h-12 px-4 rounded-2xl border-2 border-dashed border-primary/30 text-primary font-bold hover:bg-white/50 transition-all flex items-center gap-2 text-sm shrink-0">
-              <Camera className="w-4 h-4" /> Photo
-            </button>
-          )}
+            )}
+          </div>
 
-          {/* Audio Block */}
-          {localAudio ? (
-            <CustomAudioPlayer 
-              src={localAudio} 
-              onRemove={() => { setLocalAudio(null); setAudioBlob(null); }} 
-            />
-          ) : (
-            <button 
-              onClick={isRecording ? stopRecording : startRecording} 
-              className={cn(
-                "h-12 px-5 rounded-[1.5rem] font-bold transition-all flex items-center justify-center gap-2 text-sm shrink-0 min-w-[130px]",
-                isRecording 
-                  ? "bg-red-500 text-white shadow-lg animate-pulse border-2 border-red-600" 
-                  : "border-2 border-dashed border-primary/30 text-primary hover:bg-white/50"
-              )}
-            >
-              {isRecording ? (
-                <><Square className="w-4 h-4" /> <span className="w-10 text-left">{formatTime(recordingTime)}</span></>
-              ) : (
-                <><Mic className="w-4 h-4" /> Voice Note</>
-              )}
-            </button>
-          )}
+          {/* Divider */}
+          {localImages.length > 0 && localAudios.length > 0 && <div className="border-t border-primary/10 mb-3" />}
+
+          {/* Voice Notes Row */}
+          <div className="flex flex-wrap gap-3 items-center">
+            {localAudios.map((aud, idx) => (
+              <CustomAudioPlayer 
+                key={idx}
+                src={aud.url} 
+                label={`Voice ${idx + 1}`}
+                onRemove={() => setLocalAudios(prev => prev.filter((_, i) => i !== idx))} 
+              />
+            ))}
+            {localAudios.length < MAX_VOICES && !isRecording && (
+              <button 
+                onClick={startRecording} 
+                className="h-12 px-5 rounded-[1.5rem] font-bold transition-all flex items-center justify-center gap-2 text-sm shrink-0 min-w-[130px] border-2 border-dashed border-primary/30 text-primary hover:bg-white/50"
+              >
+                <Mic className="w-4 h-4" /> {localAudios.length > 0 ? '+Voice' : 'Voice Note'}
+                <span className="text-[10px] text-primary/50">{localAudios.length}/{MAX_VOICES}</span>
+              </button>
+            )}
+            {isRecording && (
+              <button 
+                onClick={stopRecording} 
+                className="h-12 px-5 rounded-[1.5rem] font-bold transition-all flex items-center justify-center gap-2 text-sm shrink-0 min-w-[130px] bg-red-500 text-white shadow-lg animate-pulse border-2 border-red-600"
+              >
+                <Square className="w-4 h-4" /> <span className="w-10 text-left">{formatTime(recordingTime)}</span>
+              </button>
+            )}
+          </div>
         </div>
 
 

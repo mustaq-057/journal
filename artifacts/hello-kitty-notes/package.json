@@ -74,6 +74,7 @@
     "zod": "catalog:"
   },
   "dependencies": {
+    "@capacitor-community/biometric-auth": "^6.0.0",
     "@capacitor/android": "^8.5.0",
     "@capacitor/core": "^8.5.0"
   }

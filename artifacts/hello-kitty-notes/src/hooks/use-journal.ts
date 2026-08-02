@@ -12,6 +12,9 @@ export interface Entry {
   tags: string[];
   imageUrl?: string | null;
   audioUrl?: string | null;
+  // Multi-media support
+  imageUrls?: string[];
+  audioUrls?: string[];
   createdAt: number;
   updatedAt: number;
 }
@@ -138,4 +141,3 @@ export function useJournal() {
     refresh: loadEntries,
   };
 }
-
