@@ -12,15 +12,14 @@ async function attemptBiometric(): Promise<boolean> {
   try {
     // Dynamically import the plugin — it won't exist in a web browser, only in the Android shell
     const { BiometricAuth } = await import('@capacitor-community/biometric-auth');
-    const { isAvailable, biometryType } = await BiometricAuth.checkBiometry();
-    if (!isAvailable) return false;
+    const result = await BiometricAuth.checkBiometry();
+    if (!result.isAvailable) return false;
 
     await BiometricAuth.authenticate({
-      reason: "Unlock Sara's Diary 🌸",
+      reason: "Unlock Sara's Diary",
       title: "Kitty AI Diary",
       subtitle: "Use your fingerprint to unlock",
       cancelTitle: "Use PIN instead",
-      allowDeviceCredential: false,
     });
     return true;
   } catch (e: any) {
