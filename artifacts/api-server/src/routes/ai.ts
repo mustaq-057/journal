@@ -8,8 +8,9 @@ const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY || "",
 });
 
-// GET /api/migrate — Add audio_url column (safe, idempotent)
-router.get("/migrate", async (_req: any, res: any) => {
+// POST /api/migrate — Add audio_url column (safe, idempotent)
+// NOTE: POST to prevent accidental browser-triggered migrations
+router.post("/migrate", async (_req: any, res: any) => {
   try {
     await pool.query("ALTER TABLE journal_entries ADD COLUMN IF NOT EXISTS audio_url text");
     res.json({ success: true, message: "audio_url column ready ✅" });
@@ -19,8 +20,9 @@ router.get("/migrate", async (_req: any, res: any) => {
   }
 });
 
-// GET /api/migrate-chat — Create kitty_chat_messages table (safe, idempotent)
-router.get("/migrate-chat", async (_req: any, res: any) => {
+// POST /api/migrate-chat — Create kitty_chat_messages table (safe, idempotent)
+// NOTE: POST to prevent accidental browser-triggered migrations
+router.post("/migrate-chat", async (_req: any, res: any) => {
   try {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS kitty_chat_messages (
@@ -69,8 +71,15 @@ Respond strictly with valid JSON only, no markdown formatting.`,
     });
 
     const responseText = completion.choices[0]?.message?.content || "{}";
-    const cleaned = responseText.replace(/```json|```/g, "").trim();
-    const data = JSON.parse(cleaned);
+    let data: Record<string, unknown>;
+    try {
+      const cleaned = responseText.replace(/```json|```/g, "").trim();
+      data = JSON.parse(cleaned);
+    } catch {
+      console.error("Groq returned invalid JSON:", responseText);
+      res.status(500).json({ error: "AI returned invalid response" });
+      return;
+    }
 
     res.json(data);
   } catch (err) {

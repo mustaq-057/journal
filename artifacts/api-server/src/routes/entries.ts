@@ -6,9 +6,15 @@ import multer from "multer";
 import { z } from "zod";
 import { randomUUID } from "node:crypto";
 
-// Configure Cloudinary from env URL
+// Configure Cloudinary explicitly from CLOUDINARY_URL env var
 if (process.env.CLOUDINARY_URL) {
-  // cloudinary auto-configures from CLOUDINARY_URL env var
+  const url = new URL(process.env.CLOUDINARY_URL);
+  cloudinary.config({
+    cloud_name: url.hostname,
+    api_key: url.username,
+    api_secret: url.password,
+    secure: true,
+  });
 }
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
@@ -20,12 +26,11 @@ router.get("/entries", async (_req: any, res: any) => {
   try {
     const entries = await db
       .select()
-      .from(entriesTable)
-      .orderBy(entriesTable.createdAt);
+      .from(entriesTable);
 
-    // sort desc in JS since drizzle desc import may vary
-    const sorted = [...entries].sort((a, b) => b.createdAt - a.createdAt);
-    res.json(sorted);
+    // sort desc by createdAt
+    entries.sort((a, b) => b.createdAt - a.createdAt);
+    res.json(entries);
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch entries" });
   }

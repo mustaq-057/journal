@@ -31,7 +31,25 @@ app.use(
     },
   }),
 );
-app.use(cors());
+const ALLOWED_ORIGINS = [
+  "https://withered-wind-145e.f27839058.workers.dev",
+  "https://journal-1-o8np.onrender.com",
+  "http://localhost:5173",
+  "http://localhost:4173",
+];
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, Postman, server-to-server)
+      if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS blocked: ${origin}`));
+      }
+    },
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
