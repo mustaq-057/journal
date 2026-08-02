@@ -55,8 +55,7 @@ export function SharedEntry() {
     );
   }
 
-  const words = getWordCount(entry.title + ' ' + entry.body);
-  const readTime = getReadingTime(words);
+
   const bgColor = COLORS[entry.color] || entry.color;
 
   return (
@@ -112,7 +111,7 @@ export function SharedEntry() {
           </div>
           
           <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase tracking-widest bg-white/80 px-4 py-2 rounded-full border border-border">
-            <span>~{readTime} min read · {words} words</span>
+            <span>{(entry.body || '').length} characters</span>
           </div>
         </div>
       </div>

@@ -167,8 +167,7 @@ export function Editor() {
       ? format(toMoroccoTime(entries.find(e => e.id === params.id)!.createdAt), 'MMMM do, yyyy')
       : format(toMoroccoTime(Date.now()), 'MMMM do, yyyy');
 
-  const words = getWordCount(body);
-  const readTime = getReadingTime(words);
+
 
   if (!isLoaded) return null;
 
@@ -553,7 +552,7 @@ export function Editor() {
 
       <div className="flex items-center justify-end gap-2 text-xs font-bold text-muted-foreground uppercase tracking-widest mt-4">
         <StickerIcon name="star" className="w-3 h-3 text-primary" />
-        <span>~{readTime} min read · {words} words</span>
+        <span>{body.length} characters</span>
       </div>
     </div>
   );
