@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Route, Switch, Router as WouterRouter } from 'wouter';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { PinLock } from '@/components/pin-lock';
 import { Layout } from '@/components/layout';
@@ -45,6 +45,23 @@ function Router() {
 function App() {
   const isSharedRoute = window.location.pathname.startsWith('/shared/');
   const [isLocked, setIsLocked] = useState(!isSharedRoute);
+
+  // Auto-reload the app to fetch the latest Vercel updates if it's been sleeping in the background for >5 minutes
+  useEffect(() => {
+    let hiddenTime = 0;
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        hiddenTime = Date.now();
+      } else {
+        // 5 minutes = 300000 ms
+        if (hiddenTime && Date.now() - hiddenTime > 300000) {
+          window.location.reload();
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
