@@ -1,3 +1,8 @@
-// Export the pre-built application instead of the source.
-// This completely skips Vercel's TypeChecker, resolving all duplicate drizzle-orm type conflicts.
-export { default } from "../artifacts/api-server/dist/app.mjs";
+let app;
+module.exports = async (req, res) => {
+  if (!app) {
+    const mod = await import("../artifacts/api-server/dist/app.mjs");
+    app = mod.default || mod;
+  }
+  return app(req, res);
+};
