@@ -4,7 +4,7 @@ import { useJournal, Mood, ThemeColor, getWordCount, getReadingTime } from '@/ho
 import { MoodIcon } from '@/components/mood-icon';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, Save, Trash2, Tag, Camera, X, Share2, Mic, Square, Play } from 'lucide-react';
+import { ChevronLeft, Save, Trash2, Tag, Camera, X, Share2, Mic, Square, Play, Pause } from 'lucide-react';
 import { format } from 'date-fns';
 import { SaveHelloKitty, StickerIcon } from '@/components/hello-kitty-svgs';
 import { RichText } from '@/components/rich-text';
@@ -20,6 +20,103 @@ const COLORS: { id: ThemeColor; value: string; label: string }[] = [
 
 const TAG_OPTIONS = ["happy day", "self care", "friendship", "adventure", "dream", "love", "cozy"];
 const STICKERS = ["heart", "star", "bow", "cake", "flower", "paw", "cloud", "rainbow"];
+
+const CustomAudioPlayer = ({ src, onRemove }: { src: string; onRemove: () => void }) => {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const setAudioData = () => {
+      setDuration(audio.duration);
+    };
+    const setAudioTime = () => {
+      setCurrentTime(audio.currentTime);
+    };
+    const handleEnded = () => {
+      setIsPlaying(false);
+      setCurrentTime(0);
+    };
+
+    audio.addEventListener('loadedmetadata', setAudioData);
+    audio.addEventListener('timeupdate', setAudioTime);
+    audio.addEventListener('ended', handleEnded);
+
+    return () => {
+      audio.removeEventListener('loadedmetadata', setAudioData);
+      audio.removeEventListener('timeupdate', setAudioTime);
+      audio.removeEventListener('ended', handleEnded);
+    };
+  }, []);
+
+  const togglePlayPause = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (isPlaying) {
+      audio.pause();
+    } else {
+      audio.play();
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    const time = Number(e.target.value);
+    audio.currentTime = time;
+    setCurrentTime(time);
+  };
+
+  const formatTime = (time: number) => {
+    if (isNaN(time)) return '0:00';
+    const min = Math.floor(time / 60);
+    const sec = Math.floor(time % 60);
+    return `${min}:${sec.toString().padStart(2, '0')}`;
+  };
+
+  return (
+    <div className="relative h-14 flex-1 min-w-[260px] max-w-[400px] rounded-[2rem] border border-primary/20 bg-white flex items-center px-4 shadow-sm shrink-0 gap-3">
+      <audio ref={audioRef} src={src} className="hidden" />
+      
+      <button 
+        onClick={togglePlayPause}
+        className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-[#e85d95] text-white flex items-center justify-center shadow-md hover:scale-105 active:scale-95 transition-all shrink-0"
+      >
+        {isPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 ml-1 fill-current" />}
+      </button>
+
+      <div className="flex-1 flex flex-col justify-center">
+        <input 
+          type="range" 
+          min="0" 
+          max={duration || 100} 
+          value={currentTime} 
+          onChange={handleSeek}
+          className="w-full h-1.5 bg-primary/10 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-sm"
+        />
+        <div className="flex justify-between mt-1 text-[10px] font-bold text-primary/70 tracking-wider">
+          <span>{formatTime(currentTime)}</span>
+          <div className="flex items-center gap-1">
+            <StickerIcon name="bow" className="w-2.5 h-2.5 opacity-50" />
+            <span>{formatTime(duration)}</span>
+          </div>
+        </div>
+      </div>
+
+      <button 
+        onClick={onRemove} 
+        className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-red-400 text-white flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.2)] hover:bg-red-500 active:scale-95 transition-all z-10 border-2 border-white"
+      >
+        <X className="w-4 h-4" />
+      </button>
+    </div>
+  );
+};
 
 export function Editor() {
   const [, setLocation] = useLocation();
@@ -600,15 +697,10 @@ export function Editor() {
 
           {/* Audio Block */}
           {localAudio ? (
-            <div className="relative flex-1 min-w-[260px] max-w-[400px] rounded-[1.5rem] border border-primary/20 bg-white flex items-center p-2 shadow-sm shrink-0">
-              <audio src={localAudio} controls className="w-full rounded-full" />
-              <button 
-                onClick={() => { setLocalAudio(null); setAudioBlob(null); }} 
-                className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.2)] hover:bg-red-600 active:scale-95 transition-all z-10 border-2 border-white"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+            <CustomAudioPlayer 
+              src={localAudio} 
+              onRemove={() => { setLocalAudio(null); setAudioBlob(null); }} 
+            />
           ) : (
             <button 
               onClick={isRecording ? stopRecording : startRecording} 
