@@ -43,7 +43,8 @@ const frontendDistPath = path.resolve(__dirname, "../../hello-kitty-notes/dist")
 app.use(express.static(frontendDistPath));
 
 // Fallback for SPA (Single Page Application) routing
-app.use((req: express.Request, res: express.Response) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+app.use((_req: any, res: any) => {
   res.sendFile(path.resolve(frontendDistPath, "index.html"));
 });
 
