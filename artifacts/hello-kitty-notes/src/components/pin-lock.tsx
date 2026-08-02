@@ -11,6 +11,7 @@ interface PinLockProps {
 async function attemptBiometric(): Promise<boolean> {
   try {
     // Dynamically import the plugin — it won't exist in a web browser, only in the Android shell
+    // @ts-ignore — package is installed in the Android build environment, not local dev
     const { BiometricAuth } = await import('@capacitor-community/biometric-auth');
     const result = await BiometricAuth.checkBiometry();
     if (!result.isAvailable) return false;
@@ -38,6 +39,7 @@ export function PinLock({ onUnlock }: PinLockProps) {
     // Check if biometric is available on this device
     (async () => {
       try {
+        // @ts-ignore
         const { BiometricAuth } = await import('@capacitor-community/biometric-auth');
         const { isAvailable } = await BiometricAuth.checkBiometry();
         setBiometricAvailable(isAvailable);
