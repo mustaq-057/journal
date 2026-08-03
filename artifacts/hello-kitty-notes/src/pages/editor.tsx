@@ -81,7 +81,7 @@ const CustomAudioPlayer = ({ src, onRemove, label }: { src: string; onRemove: ()
 
   return (
     <div className="relative rounded-[2rem] border border-primary/20 bg-white flex flex-col px-4 pt-2 pb-3 shadow-sm shrink-0 min-w-[260px] max-w-[360px]">
-      <audio ref={audioRef} src={src} className="hidden" />
+      <audio ref={audioRef} src={src} preload="auto" className="hidden" />
       {label && <span className="text-[10px] font-bold text-primary/60 uppercase tracking-widest mb-2">{label}</span>}
       
       {/* Controls row: play button + slider side by side */}
@@ -717,11 +717,14 @@ export function Editor() {
           {/* Photos Row */}
           <div className="flex flex-wrap gap-3 items-center mb-3">
             {localImages.map((img, idx) => (
-              <div key={idx} className="relative w-24 h-24 rounded-2xl overflow-hidden border border-border shadow-sm shrink-0">
+              <div key={idx} className="relative w-24 h-24 rounded-2xl overflow-hidden border border-border shadow-sm shrink-0 bg-primary/20 animate-pulse">
                 <img 
                   src={img.url} 
                   alt={`Memory ${idx + 1}`} 
-                  className="w-full h-full object-cover cursor-pointer" 
+                  loading="eager"
+                  decoding="async"
+                  className="absolute inset-0 w-full h-full object-cover cursor-pointer z-10" 
+                  onLoad={(e) => e.currentTarget.parentElement?.classList.remove('animate-pulse')}
                   onClick={() => setFullscreenImage(img.url)}
                 />
                 <button 
