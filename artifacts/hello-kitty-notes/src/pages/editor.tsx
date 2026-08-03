@@ -281,7 +281,8 @@ export function Editor() {
       const chunks: Blob[] = [];
       recorder.ondataavailable = e => chunks.push(e.data);
       recorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'audio/webm' });
+        const actualMimeType = recorder.mimeType || 'audio/webm';
+        const blob = new Blob(chunks, { type: actualMimeType });
         setLocalAudios(prev => [...prev, { url: URL.createObjectURL(blob), blob }]);
         stream.getTracks().forEach(t => t.stop());
       };

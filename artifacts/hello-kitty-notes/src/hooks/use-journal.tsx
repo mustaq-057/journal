@@ -130,7 +130,11 @@ function useJournalInner() {
 
   const uploadAudio = useCallback(async (id: string, file: Blob) => {
     const formData = new FormData();
-    formData.append('audio', file, 'voice-memo.webm');
+    let ext = 'webm';
+    if (file.type.includes('mp4')) ext = 'mp4';
+    else if (file.type.includes('ogg')) ext = 'ogg';
+    
+    formData.append('audio', file, `voice-memo.${ext}`);
     const res = await fetch(`${baseUrl}/api/entries/${id}/audio`, {
       method: 'POST',
       body: formData,
