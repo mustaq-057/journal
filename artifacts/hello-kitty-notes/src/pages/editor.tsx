@@ -173,7 +173,8 @@ export function Editor() {
   const MAX_VOICES = 2;
 
   useEffect(() => {
-    if (isLoaded && !isNew) {
+    // Load entry data into state when editing an existing entry
+    if (!isNew && isLoaded) {
       const entry = entries.find(e => e.id === params.id);
       if (entry) {
         setTitle(entry.title);
@@ -181,13 +182,13 @@ export function Editor() {
         setMood(entry.mood);
         setColor(entry.color);
         setTags(entry.tags || []);
-        // Load existing images
+        // Parse existing media URLs
         const parsedImgs = parseMediaUrls(entry.imageUrl);
         setLocalImages(parsedImgs.map(url => ({ url })));
-        // Load existing audios
         const parsedAuds = parseMediaUrls(entry.audioUrl);
         setLocalAudios(parsedAuds.map(url => ({ url })));
       } else {
+        // Entry not found – go back to feed
         setLocation('/');
       }
     }
