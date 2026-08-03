@@ -21,6 +21,47 @@ const COLORS: { id: ThemeColor; value: string; label: string }[] = [
 const TAG_OPTIONS = ["happy day", "self care", "friendship", "adventure", "dream", "love", "cozy"];
 const STICKERS = ["heart", "star", "bow", "cake", "flower", "paw", "cloud", "rainbow"];
 
+// Pick the best supported audio MIME type — Samsung Android WebView prefers mp4/aac
+function getBestAudioMime(): string {
+  const candidates = [
+    'audio/mp4',          // Samsung WebView, Safari, iOS
+    'audio/webm;codecs=opus', // Chrome desktop
+    'audio/webm',         // Chrome fallback
+    'audio/ogg;codecs=opus',  // Firefox
+    'audio/ogg',
+  ];
+  return candidates.find(m => MediaRecorder.isTypeSupported(m)) || '';
+}
+
+// Compress an image File via canvas so Samsung's 50MP+ shots don't choke the browser
+async function compressImage(file: File, maxPx = 1920, quality = 0.82): Promise<File> {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const { width, height } = img;
+      const scale = Math.min(1, maxPx / Math.max(width, height));
+      const w = Math.round(width * scale);
+      const h = Math.round(height * scale);
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      canvas.getContext('2d')!.drawImage(img, 0, 0, w, h);
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) return resolve(file); // fallback
+          resolve(new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' }));
+        },
+        'image/jpeg',
+        quality,
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+}
+
 const CustomAudioPlayer = ({ src, onRemove, label }: { src: string; onRemove: () => void; label?: string }) => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -33,30 +74,27 @@ const CustomAudioPlayer = ({ src, onRemove, label }: { src: string; onRemove: ()
     const audio = audioRef.current;
     if (!audio) return;
 
-    const setAudioData = () => {
-      setDuration(audio.duration);
+    const markLoaded = () => {
+      if (audio.duration && !isNaN(audio.duration)) setDuration(audio.duration);
       setIsLoaded(true);
     };
-    const setAudioTime = () => {
-      setCurrentTime(audio.currentTime);
-    };
-    const handleEnded = () => {
-      setIsPlaying(false);
-      setCurrentTime(0);
-    };
+    const setAudioTime = () => setCurrentTime(audio.currentTime);
+    const handleEnded = () => { setIsPlaying(false); setCurrentTime(0); };
 
-    // If already loaded (e.g. blob), grab duration immediately
-    if (audio.readyState >= 1) {
-      setDuration(audio.duration);
-      setIsLoaded(true);
-    }
-
-    audio.addEventListener('loadedmetadata', setAudioData);
+    // Samsung WebView sometimes fires canplay before loadedmetadata — catch all
+    audio.addEventListener('loadedmetadata', markLoaded);
+    audio.addEventListener('canplay', markLoaded);        // Samsung WebView
+    audio.addEventListener('canplaythrough', markLoaded); // Samsung Internet
     audio.addEventListener('timeupdate', setAudioTime);
     audio.addEventListener('ended', handleEnded);
 
+    // If readyState is already past HAVE_METADATA (Samsung caches it)
+    if (audio.readyState >= 1) markLoaded();
+
     return () => {
-      audio.removeEventListener('loadedmetadata', setAudioData);
+      audio.removeEventListener('loadedmetadata', markLoaded);
+      audio.removeEventListener('canplay', markLoaded);
+      audio.removeEventListener('canplaythrough', markLoaded);
       audio.removeEventListener('timeupdate', setAudioTime);
       audio.removeEventListener('ended', handleEnded);
     };
@@ -67,10 +105,16 @@ const CustomAudioPlayer = ({ src, onRemove, label }: { src: string; onRemove: ()
     if (!audio) return;
     if (isPlaying) {
       audio.pause();
+      setIsPlaying(false);
     } else {
-      audio.play();
+      // Samsung WebView: play() returns a Promise — must handle rejection
+      const p = audio.play();
+      if (p !== undefined) {
+        p.then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
+      } else {
+        setIsPlaying(true);
+      }
     }
-    setIsPlaying(!isPlaying);
   };
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -82,7 +126,7 @@ const CustomAudioPlayer = ({ src, onRemove, label }: { src: string; onRemove: ()
   };
 
   const formatTime = (time: number) => {
-    if (isNaN(time)) return '0:00';
+    if (isNaN(time) || !isFinite(time)) return '0:00';
     const min = Math.floor(time / 60);
     const sec = Math.floor(time % 60);
     return `${min}:${sec.toString().padStart(2, '0')}`;
@@ -90,7 +134,15 @@ const CustomAudioPlayer = ({ src, onRemove, label }: { src: string; onRemove: ()
 
   return (
     <div className="relative rounded-[2rem] border border-primary/20 bg-white flex flex-col px-4 pt-2 pb-3 shadow-sm shrink-0 min-w-[260px] max-w-[360px]">
-      <audio ref={audioRef} src={src} preload="auto" className="hidden" />
+      {/* playsinline + webkit attrs needed for Samsung Internet & WebView */}
+      <audio
+        ref={audioRef}
+        src={src}
+        preload="auto"
+        className="hidden"
+        playsInline
+        {...({ 'webkit-playsinline': 'true', 'x-webkit-airplay': 'allow' } as React.HTMLAttributes<HTMLAudioElement>)}
+      />
       {label && <span className="text-[10px] font-bold text-primary/60 uppercase tracking-widest mb-2">{label}</span>}
       
       {/* Show skeleton until audio metadata loads */}
@@ -292,8 +344,20 @@ export function Editor() {
       e.target.value = '';
       return;
     }
-    const newImgs = files.map(file => ({ url: URL.createObjectURL(file), file }));
-    setLocalImages(prev => [...prev, ...newImgs]);
+    setUploadingImage(true);
+    try {
+      // Compress images from Samsung's 50MP+ cameras before displaying/uploading
+      const processed = await Promise.all(
+        files.map(async (file) => {
+          const isImage = file.type.startsWith('image/');
+          const compressed = isImage ? await compressImage(file) : file;
+          return { url: URL.createObjectURL(compressed), file: compressed };
+        })
+      );
+      setLocalImages(prev => [...prev, ...processed]);
+    } finally {
+      setUploadingImage(false);
+    }
     e.target.value = '';
   };
 
@@ -303,26 +367,35 @@ export function Editor() {
       return;
     }
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
+      // Samsung needs explicit constraints for reliable mic capture
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 44100 },
+      });
+
+      // Pick the best MIME type: Samsung WebView supports mp4/aac, not webm
+      const bestMime = getBestAudioMime();
+      const recorderOptions = bestMime ? { mimeType: bestMime } : {};
+      const recorder = new MediaRecorder(stream, recorderOptions);
       mediaRecorderRef.current = recorder;
       
       const chunks: Blob[] = [];
-      recorder.ondataavailable = e => chunks.push(e.data);
+      recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
       recorder.onstop = () => {
-        const actualMimeType = recorder.mimeType || 'audio/webm';
-        const blob = new Blob(chunks, { type: actualMimeType });
+        // Use the recorder's actual mimeType (may differ from what we requested)
+        const finalMime = recorder.mimeType || bestMime || 'audio/mp4';
+        const blob = new Blob(chunks, { type: finalMime });
         setLocalAudios(prev => [...prev, { url: URL.createObjectURL(blob), blob }]);
         stream.getTracks().forEach(t => t.stop());
       };
 
-      recorder.start();
+      // timeslice=250ms ensures data arrives even if Samsung suspends the tab
+      recorder.start(250);
       setIsRecording(true);
       setRecordingTime(0);
 
       timerRef.current = setInterval(() => {
         setRecordingTime(prev => {
-          if (prev >= 299) { // 5 minutes max (300 seconds)
+          if (prev >= 299) {
             stopRecording();
             return 300;
           }
