@@ -151,6 +151,13 @@ export function Editor() {
   const [recordingTime, setRecordingTime] = useState(0);
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
 
+  // Helper to request a low‑resolution thumbnail from Cloudinary (or any CDN) for faster UI rendering
+  const getThumbnailUrl = (url: string) => {
+    // If URL already has query params, append with &
+    const separator = url.includes('?') ? '&' : '?';
+    // Example Cloudinary transformation: limit width to 200px, auto‑format, and moderate quality
+    return `${url}${separator}f=auto&fit=max&w=200&q=auto`;
+  };
   // Prefetch images and audio for instant display when revisiting an entry
   useEffect(() => {
     // Preload images
@@ -740,12 +747,18 @@ export function Editor() {
             {localImages.map((img, idx) => (
               <div key={img.url} className="relative w-24 h-24 rounded-2xl overflow-hidden border border-border shadow-sm shrink-0 bg-primary/20 animate-pulse">
                 <img 
-                  src={img.url} 
+                  src={getThumbnailUrl(img.url)} 
+                  data-fullsrc={img.url}
                   alt={`Memory ${idx + 1}`} 
                   loading="eager"
                   decoding="async"
                   className="absolute inset-0 w-full h-full object-cover cursor-pointer z-10" 
-                  onLoad={(e) => e.currentTarget.parentElement?.classList.remove('animate-pulse')}
+                  onLoad={(e) => {
+                    // Swap to the full‑size image once the thumbnail has rendered
+                    const fullSrc = e.currentTarget.getAttribute('data-fullsrc');
+                    if (fullSrc) e.currentTarget.src = fullSrc;
+                    e.currentTarget.parentElement?.classList.remove('animate-pulse');
+                  }}
                   onClick={() => setFullscreenImage(img.url)}
                 />
                 <button 
