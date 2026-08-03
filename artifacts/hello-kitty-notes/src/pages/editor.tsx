@@ -515,12 +515,17 @@ export function Editor() {
         <div className="mb-10 relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div className="flex-1">
             <p className="font-heading text-xl md:text-2xl text-primary mb-3 pl-2">Dear Diary, it's {dateStr}</p>
-            <input
-              type="text"
+            <textarea
               placeholder="Give your memory a beautiful title..."
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full text-4xl md:text-5xl font-heading text-foreground bg-transparent border-none outline-none placeholder:text-muted-foreground/40 focus:ring-0 leading-tight"
+              onChange={(e) => {
+                setTitle(e.target.value);
+                e.target.style.height = 'auto';
+                e.target.style.height = (e.target.scrollHeight) + 'px';
+              }}
+              rows={1}
+              className="w-full text-4xl md:text-5xl font-heading text-foreground bg-transparent border-none outline-none placeholder:text-muted-foreground/40 focus:ring-0 leading-tight resize-none overflow-hidden block"
+              style={{ minHeight: '1.2em' }}
             />
           </div>
         </div>
