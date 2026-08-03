@@ -26,6 +26,7 @@ const CustomAudioPlayer = ({ src, onRemove, label }: { src: string; onRemove: ()
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -33,6 +34,7 @@ const CustomAudioPlayer = ({ src, onRemove, label }: { src: string; onRemove: ()
 
     const setAudioData = () => {
       setDuration(audio.duration);
+      setIsLoaded(true);
     };
     const setAudioTime = () => {
       setCurrentTime(audio.currentTime);
@@ -84,6 +86,11 @@ const CustomAudioPlayer = ({ src, onRemove, label }: { src: string; onRemove: ()
       <audio ref={audioRef} src={src} preload="auto" className="hidden" />
       {label && <span className="text-[10px] font-bold text-primary/60 uppercase tracking-widest mb-2">{label}</span>}
       
+      {/* Show skeleton until audio metadata loads */}
+      {!isLoaded && (
+        <div className="absolute inset-0 bg-primary/20 animate-pulse rounded-[2rem]" />
+      )}
+
       {/* Controls row: play button + slider side by side */}
       <div className="flex items-center gap-3">
         <button 
@@ -143,7 +150,20 @@ export function Editor() {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
-  
+
+  // Prefetch images and audio for instant display when revisiting an entry
+  useEffect(() => {
+    // Preload images
+    localImages.forEach(img => {
+      const i = new Image();
+      i.src = img.url;
+    });
+    // Preload audio metadata
+    localAudios.forEach(aud => {
+      const a = new Audio(aud.url);
+      a.preload = 'auto';
+    });
+  }, [localImages, localAudios]);  
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -717,7 +737,7 @@ export function Editor() {
           {/* Photos Row */}
           <div className="flex flex-wrap gap-3 items-center mb-3">
             {localImages.map((img, idx) => (
-              <div key={idx} className="relative w-24 h-24 rounded-2xl overflow-hidden border border-border shadow-sm shrink-0 bg-primary/20 animate-pulse">
+              <div key={img.url} className="relative w-24 h-24 rounded-2xl overflow-hidden border border-border shadow-sm shrink-0 bg-primary/20 animate-pulse">
                 <img 
                   src={img.url} 
                   alt={`Memory ${idx + 1}`} 
