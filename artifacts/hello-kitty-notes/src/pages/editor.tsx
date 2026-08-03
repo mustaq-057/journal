@@ -26,7 +26,8 @@ const CustomAudioPlayer = ({ src, onRemove, label }: { src: string; onRemove: ()
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
-  const [isLoaded, setIsLoaded] = useState(false);
+  // Blob URLs are already in memory — show instantly. Remote URLs need to load.
+  const [isLoaded, setIsLoaded] = useState(() => src.startsWith('blob:'));
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -44,6 +45,12 @@ const CustomAudioPlayer = ({ src, onRemove, label }: { src: string; onRemove: ()
       setCurrentTime(0);
     };
 
+    // If already loaded (e.g. blob), grab duration immediately
+    if (audio.readyState >= 1) {
+      setDuration(audio.duration);
+      setIsLoaded(true);
+    }
+
     audio.addEventListener('loadedmetadata', setAudioData);
     audio.addEventListener('timeupdate', setAudioTime);
     audio.addEventListener('ended', handleEnded);
@@ -53,7 +60,7 @@ const CustomAudioPlayer = ({ src, onRemove, label }: { src: string; onRemove: ()
       audio.removeEventListener('timeupdate', setAudioTime);
       audio.removeEventListener('ended', handleEnded);
     };
-  }, []);
+  }, [src]);
 
   const togglePlayPause = () => {
     const audio = audioRef.current;
@@ -151,26 +158,7 @@ export function Editor() {
   const [recordingTime, setRecordingTime] = useState(0);
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
 
-  // Helper to request a low‑resolution thumbnail from Cloudinary (or any CDN) for faster UI rendering
-  const getThumbnailUrl = (url: string) => {
-    // If URL already has query params, append with &
-    const separator = url.includes('?') ? '&' : '?';
-    // Example Cloudinary transformation: limit width to 200px, auto‑format, and moderate quality
-    return `${url}${separator}f=auto&fit=max&w=200&q=auto`;
-  };
-  // Prefetch images and audio for instant display when revisiting an entry
-  useEffect(() => {
-    // Preload images
-    localImages.forEach(img => {
-      const i = new Image();
-      i.src = img.url;
-    });
-    // Preload audio metadata
-    localAudios.forEach(aud => {
-      const a = new Audio(aud.url);
-      a.preload = 'auto';
-    });
-  }, [localImages, localAudios]);  
+  
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -225,18 +213,31 @@ export function Editor() {
         });
       }
 
-      // Upload newly added images (those that have a File object — will append to kept list on server)
+      // Upload newly added images (those that have a File object)
+      // Collect the final server URLs so local state reflects what's actually saved
+      let finalImageUrls: string[] = [...keptImageUrls];
       for (const img of localImages) {
         if (img.file) {
-          await uploadImage(entryId, img.file);
+          const updated = await uploadImage(entryId, img.file);
+          // Server returns the updated entry with all image URLs
+          const serverUrls = parseMediaUrls(updated.imageUrl);
+          finalImageUrls = serverUrls;
         }
       }
-      // Upload newly added audios (those that have a Blob — will append to kept list on server)
+
+      // Upload newly added audios (those that have a Blob)
+      let finalAudioUrls: string[] = [...keptAudioUrls];
       for (const aud of localAudios) {
         if (aud.blob) {
-          await uploadAudio(entryId, aud.blob);
+          const updated = await uploadAudio(entryId, aud.blob);
+          const serverUrls = parseMediaUrls(updated.audioUrl);
+          finalAudioUrls = serverUrls;
         }
       }
+
+      // Sync local state to server URLs so media persists without re-fetch
+      setLocalImages(finalImageUrls.map(url => ({ url })));
+      setLocalAudios(finalAudioUrls.map(url => ({ url })));
 
       setTimeout(() => {
         setShowSaveAnim(false);
@@ -745,20 +746,13 @@ export function Editor() {
           {/* Photos Row */}
           <div className="flex flex-wrap gap-3 items-center mb-3">
             {localImages.map((img, idx) => (
-              <div key={img.url} className="relative w-24 h-24 rounded-2xl overflow-hidden border border-border shadow-sm shrink-0 bg-primary/20 animate-pulse">
+              <div key={img.url} className="relative w-24 h-24 rounded-2xl overflow-hidden border border-border shadow-sm shrink-0">
                 <img 
-                  src={getThumbnailUrl(img.url)} 
-                  data-fullsrc={img.url}
+                  src={img.url}
                   alt={`Memory ${idx + 1}`} 
                   loading="eager"
-                  decoding="async"
-                  className="absolute inset-0 w-full h-full object-cover cursor-pointer z-10" 
-                  onLoad={(e) => {
-                    // Swap to the full‑size image once the thumbnail has rendered
-                    const fullSrc = e.currentTarget.getAttribute('data-fullsrc');
-                    if (fullSrc) e.currentTarget.src = fullSrc;
-                    e.currentTarget.parentElement?.classList.remove('animate-pulse');
-                  }}
+                  decoding="sync"
+                  className="absolute inset-0 w-full h-full object-cover cursor-pointer"
                   onClick={() => setFullscreenImage(img.url)}
                 />
                 <button 
@@ -785,7 +779,7 @@ export function Editor() {
           <div className="flex flex-wrap gap-3 items-center">
             {localAudios.map((aud, idx) => (
               <CustomAudioPlayer 
-                key={idx}
+                key={aud.url}
                 src={aud.url} 
                 label={`Voice ${idx + 1}`}
                 onRemove={() => setLocalAudios(prev => prev.filter((_, i) => i !== idx))} 
