@@ -34,8 +34,11 @@ app.use(
 const ALLOWED_ORIGINS = [
   "https://withered-wind-145e.f27839058.workers.dev",
   "https://journal-1-o8np.onrender.com",
+  "http://localhost:2521",
   "http://localhost:5173",
   "http://localhost:4173",
+  "http://localhost:3000",
+  "http://localhost:3001",
 ];
 app.use(
   cors({
