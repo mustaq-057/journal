@@ -6,7 +6,8 @@ const router = Router();
 
 // Initialize lazily to ensure Vercel environment variables are fully loaded at request time
 const getGroq = () => new Groq({
-  apiKey: process.env.GROQ_API_KEY || "",
+  apiKey: process.env.OPENROUTER_API_KEY || process.env.GROQ_API_KEY || "",
+  baseURL: "https://openrouter.ai/api/v1",
 });
 
 // POST /api/migrate — Add audio_url column (safe, idempotent)
@@ -68,7 +69,7 @@ Respond strictly with valid JSON only, no markdown formatting.`,
           content: text,
         },
       ],
-      model: "openai/gpt-oss-20b",
+      model: "meta-llama/llama-3.3-70b-instruct",
       temperature: 0.5,
     });
 
@@ -187,7 +188,7 @@ Be someone the user genuinely enjoys talking to — emotionally intelligent, eng
           content: message,
         },
       ],
-      model: "qwen/qwen3.8-27b",
+      model: "meta-llama/llama-3.3-70b-instruct",
       temperature: 0.85,
       max_tokens: 180,
     });
