@@ -68,7 +68,7 @@ Respond strictly with valid JSON only, no markdown formatting.`,
           content: text,
         },
       ],
-      model: "llama-3.3-70b-versatile",
+      model: "openai/gpt-oss-20b",
       temperature: 0.5,
     });
 
@@ -187,7 +187,7 @@ Be someone the user genuinely enjoys talking to — emotionally intelligent, eng
           content: message,
         },
       ],
-      model: "llama-3.3-70b-versatile",
+      model: "openai/gpt-oss-20b",
       temperature: 0.85,
       max_tokens: 180,
     });
