@@ -1,14 +1,26 @@
 import { Router } from "express";
-import Groq from "groq-sdk";
 import { pool } from "@workspace/db";
 
 const router = Router();
 
-// Initialize lazily to ensure Vercel environment variables are fully loaded at request time
-const getGroq = () => new Groq({
-  apiKey: process.env.OPENROUTER_API_KEY || process.env.GROQ_API_KEY || "",
-  baseURL: "https://openrouter.ai/api/v1",
-});
+const callOpenRouter = async (body: any) => {
+  const apiKey = process.env.OPENROUTER_API_KEY || process.env.GROQ_API_KEY || "";
+  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+      "HTTP-Referer": "https://journal-api-server-nine.vercel.app",
+      "X-Title": "Hello Kitty Journal",
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`OpenRouter error: ${res.status} ${errText}`);
+  }
+  return res.json();
+};
 
 // POST /api/migrate — Add audio_url column (safe, idempotent)
 // NOTE: POST to prevent accidental browser-triggered migrations
@@ -50,8 +62,7 @@ router.post("/ai/suggest-mood", async (req: any, res: any) => {
       return;
     }
 
-    const groq = getGroq();
-    const completion = await groq.chat.completions.create({
+    const completion = await callOpenRouter({
       messages: [
         {
           role: "system",
@@ -96,8 +107,7 @@ router.post("/ai/kitty-chat", async (req: any, res: any) => {
   try {
     const { message, context } = req.body;
 
-    const groq = getGroq();
-    const completion = await groq.chat.completions.create({
+    const completion = await callOpenRouter({
       messages: [
         {
           role: "system",
