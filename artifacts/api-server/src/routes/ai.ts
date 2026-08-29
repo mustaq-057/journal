@@ -187,7 +187,7 @@ Be someone the user genuinely enjoys talking to — emotionally intelligent, eng
           content: message,
         },
       ],
-      model: "openai/gpt-oss-20b",
+      model: "qwen/qwen3.8-27b",
       temperature: 0.85,
       max_tokens: 180,
     });
