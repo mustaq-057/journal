@@ -3,7 +3,7 @@ import { pool } from "@workspace/db";
 
 const router = Router();
 
-const callOpenRouter = async (body: any) => {
+const callOpenRouter = async (body: any): Promise<any> => {
   const apiKey = process.env.OPENROUTER_API_KEY || process.env.GROQ_API_KEY || "";
   const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
