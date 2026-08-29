@@ -147,7 +147,7 @@ export function KittyChat() {
           <div className="absolute bottom-0.5 right-0.5 w-3 h-3 rounded-full bg-green-400 border-2 border-white shadow" />
         </div>
         <div>
-          <h3 className="font-heading text-2xl text-foreground leading-none">Kitty</h3>
+          <h3 className="font-heading text-2xl text-foreground leading-none">Batman AI</h3>
           <p className="text-xs font-bold text-green-500 tracking-wide mt-1">● always here</p>
         </div>
         <div className="ml-auto">
@@ -285,7 +285,7 @@ export function KittyChat() {
           </button>
         </form>
         <p className="text-center text-[10px] font-bold text-muted-foreground/50 mt-2 tracking-widest uppercase">
-          Kitty reads between the lines
+          Batman AI reads between the lines
         </p>
       </div>
     </div>
