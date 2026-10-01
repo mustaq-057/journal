@@ -3,6 +3,7 @@ import { Route, Switch, Router as WouterRouter } from 'wouter';
 import { useState, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { PinLock } from '@/components/pin-lock';
+import { InactivityOverlay } from '@/components/inactivity-overlay';
 import { Layout } from '@/components/layout';
 import { Home } from '@/pages/home';
 import { Editor } from '@/pages/editor';
@@ -46,8 +47,9 @@ function Router() {
 function App() {
   const isSharedRoute = window.location.pathname.startsWith('/shared/');
   const [isLocked, setIsLocked] = useState(!isSharedRoute);
+  const [showInactivity, setShowInactivity] = useState(false);
 
-  // Auto-reload the app to fetch the latest Vercel updates if it's been sleeping in the background for >5 minutes
+  // Show inactivity overlay instead of reloading when app returns from background after >5 minutes
   useEffect(() => {
     let hiddenTime = 0;
     const handleVisibilityChange = () => {
@@ -56,7 +58,7 @@ function App() {
       } else {
         // 5 minutes = 300000 ms
         if (hiddenTime && Date.now() - hiddenTime > 300000) {
-          window.location.reload();
+          setShowInactivity(true);
         }
       }
     };
@@ -69,9 +71,15 @@ function App() {
       <JournalProvider>
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
           <AnimatePresence>
-            {isLocked && <PinLock onUnlock={() => setIsLocked(false)} key="lock" />}
+            {showInactivity && (
+              <InactivityOverlay
+                key="inactivity"
+                onDismiss={() => setShowInactivity(false)}
+              />
+            )}
+            {isLocked && !showInactivity && <PinLock onUnlock={() => setIsLocked(false)} key="lock" />}
           </AnimatePresence>
-          {!isLocked && <Router />}
+          {!isLocked && !showInactivity && <Router />}
         </WouterRouter>
       </JournalProvider>
     </QueryClientProvider>
