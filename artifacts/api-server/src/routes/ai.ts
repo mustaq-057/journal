@@ -10,7 +10,7 @@ const callOpenRouter = async (body: any): Promise<any> => {
     headers: {
       "Authorization": `Bearer ${apiKey}`,
       "Content-Type": "application/json",
-      "HTTP-Referer": "https://jorunalll.vercel.app",
+      "HTTP-Referer": "https://journal-roan-nine.vercel.app",
       "X-Title": "Hello Kitty Journal",
     },
     body: JSON.stringify(body),

@@ -32,6 +32,7 @@ app.use(
   }),
 );
 const ALLOWED_ORIGINS = [
+  "https://journal-roan-nine.vercel.app",
   "https://withered-wind-145e.f27839058.workers.dev",
   "https://journal-1-o8np.onrender.com",
   "http://localhost:2521",
